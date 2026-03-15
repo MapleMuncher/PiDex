@@ -25,4 +25,7 @@ def create_app():
     app.register_blueprint(binders_bp)
     app.register_blueprint(pokemon_bp)
 
+    with app.app_context():
+        from app import models  # noqa: F401
+
     return app
