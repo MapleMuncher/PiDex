@@ -1,2 +1,7 @@
-__pycache__/
 .venv/
+instance/
+images/
+scripts/pending/
+__pycache__/
+*.pyc
+.env
