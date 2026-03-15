@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ---------------------------------------------------------------------------
 # Path setup — seed.py lives in scripts/, app/ and images/ live in the
@@ -75,6 +76,17 @@ def _download(url: str, dest: Path) -> bool:
         return False
 
 
+def _download_all(targets: list[tuple[str, Path]], workers: int = 10) -> None:
+    """Download a list of (url, dest) pairs concurrently, skipping existing files."""
+    pending = [(url, dest) for url, dest in targets if not dest.exists()]
+    if not pending:
+        return
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(_download, url, dest): dest for url, dest in pending}
+        for future in as_completed(futures):
+            future.result()  # re-raises any exception from _download
+
+
 def _parse_set_number(value: str | None) -> int | None:
     """Convert a card number string to int.
     Returns None for non-numeric values like 'TG01' or 'SWSH001'."""
@@ -108,7 +120,8 @@ def seed_series_and_sets() -> None:
         if not db.session.get(Series, series_id):
             db.session.add(Series(id=series_id, name=series_name))
 
-    # Upsert Set rows and download set images
+    # Upsert Set rows and collect image download targets
+    image_targets: list[tuple[str, Path]] = []
     for entry in sets_data:
         set_id     = entry["id"]
         series_id  = series_name_to_id[entry["series"]]
@@ -133,12 +146,15 @@ def seed_series_and_sets() -> None:
             ))
 
         if logo_url:
-            _download(logo_url,   SET_LOGO_DIR   / f"{set_id}.png")
+            image_targets.append((logo_url,   SET_LOGO_DIR   / f"{set_id}.png"))
         if symbol_url:
-            _download(symbol_url, SET_SYMBOL_DIR / f"{set_id}.png")
+            image_targets.append((symbol_url, SET_SYMBOL_DIR / f"{set_id}.png"))
 
     db.session.commit()
     print(f"  ✓ {len(series_name_to_id)} series, {len(sets_data)} sets")
+    print(f"  Downloading {len(image_targets)} set images...")
+    _download_all(image_targets)
+    print("  ✓ Set images done")
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +204,7 @@ def seed_cards() -> None:
             cards_data: list[dict] = json.load(f)
 
         print(f"  {set_id} ({len(cards_data)} cards)...")
+        image_targets: list[tuple[str, Path]] = []
 
         for entry in cards_data:
             card_id = entry["id"]
@@ -224,16 +241,17 @@ def seed_cards() -> None:
                     card_id=card_id, pokedex_number=dex_num
                 ))
 
-            # Download small image only; large is accessed via hd_image_url.
+            # Collect image target for concurrent download after DB inserts.
             # Use the raw card number as the filename (e.g. "1.png") to match
             # the images/cards/<set_code>/ directory structure.
             if img_small:
                 raw_number = entry.get("number", card_id)
-                _download(img_small, CARD_IMAGE_DIR / set_id / f"{raw_number}.png")
+                image_targets.append((img_small, CARD_IMAGE_DIR / set_id / f"{raw_number}.png"))
 
             total += 1
 
         db.session.commit()
+        _download_all(image_targets)
 
     print(f"  ✓ {total} cards total")
 
