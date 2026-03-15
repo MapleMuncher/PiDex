@@ -158,7 +158,7 @@ class Card(db.Model):
     set_code = db.Column(
         db.String, db.ForeignKey("sets.id"), nullable=False
     )
-    set_number = db.Column(db.Integer, nullable=True)
+    set_number = db.Column(db.String, nullable=True)
     rarity = db.Column(db.String, nullable=True)
     norm_rarity = db.Column(db.String, nullable=True)
     norm_rarity_code = db.Column(db.Integer, nullable=True)

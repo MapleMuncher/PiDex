@@ -221,7 +221,7 @@ def seed_cards() -> None:
                 super_type=entry.get("supertype"),
                 name=entry["name"],
                 set_code=set_id,
-                set_number=_parse_set_number(entry.get("number")),
+                set_number=entry.get("number"),
                 rarity=rarity_raw or None,
                 norm_rarity=norm.name if norm else None,
                 norm_rarity_code=norm.code if norm else None,
