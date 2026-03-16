@@ -51,13 +51,19 @@ STAGE_MAP = {"Baby": -1, "Basic": 0, "Stage 1": 1, "Stage 2": 2}
 
 def _series_id_from_set_id(set_id: str) -> str:
     """Strip trailing digits to derive a series ID, e.g. 'swsh3' → 'swsh'.
-    
-    All sets that share a series name use the same series ID, derived from
-    whichever set for that series appears first in all.json. This means a
-    promo set like 'swshp' won't accidentally create a second 'Sword & Shield'
-    series — it will reuse the 'swsh' ID already registered for that name.
+    Also strips a trailing 'p' when the set_id contains no digits at all,
+    treating it as a promo suffix, e.g. 'bwp' → 'bw'.
+
+    Series codes that naturally end in 'p' (e.g. 'pop') are preserved because
+    their set IDs always include digits ('pop1', 'pop2'), so stripping digits
+    yields 'pop' with no further 'p'-stripping applied.
     """
-    return re.sub(r"\d+$", "", set_id) or set_id
+    base = re.sub(r"\d+$", "", set_id)
+    # If nothing was stripped (set_id has no trailing digits) and it ends in
+    # 'p', treat the 'p' as a promo suffix and remove it.
+    if base == set_id and set_id.endswith("p"):
+        base = base[:-1]
+    return base or set_id
 
 
 def _download(url: str, dest: Path) -> bool:
