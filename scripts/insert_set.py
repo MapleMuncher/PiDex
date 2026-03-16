@@ -11,27 +11,18 @@ from pathlib import Path
 #   python scripts/update_set.py --set swsh12
 #   python scripts/update_set.py --set swsh12 --push
 # ---------------------------------------------------------------------------
-_SCRIPTS_DIR = Path(__file__).parent          # pidex/scripts/
-_PROJECT_DIR = _SCRIPTS_DIR.parent            # pidex/
+_SCRIPTS_DIR = Path(__file__).parent
+_PROJECT_DIR = _SCRIPTS_DIR.parent
 
-sys.path.insert(0, str(_SCRIPTS_DIR))         # for rarity.py
-sys.path.insert(0, str(_PROJECT_DIR))         # for app/
+sys.path.insert(0, str(_SCRIPTS_DIR))   # for rarity.py and utils.py
+sys.path.insert(0, str(_PROJECT_DIR))   # for app/
 
-from rarity import normalize_rarity          # noqa: E402
-
-# ---------------------------------------------------------------------------
-# Path constants
-# ---------------------------------------------------------------------------
-PIDEX_DATA_DIR = _PROJECT_DIR.parent / "PiDexData"
-
-IMAGE_DIR      = _PROJECT_DIR / "images"
-CARD_IMAGE_DIR = IMAGE_DIR / "cards"
-SET_LOGO_DIR   = IMAGE_DIR / "sets" / "logos"
-SET_SYMBOL_DIR = IMAGE_DIR / "sets" / "symbols"
-
-SETS_FILE  = PIDEX_DATA_DIR / "sets" / "all.json"
-CARDS_DIR  = PIDEX_DATA_DIR / "cards_subset"
-PENDING_DIR = _SCRIPTS_DIR / "pending"
+from rarity import normalize_rarity                      # noqa: E402
+from utils import (                                      # noqa: E402
+    CARD_IMAGE_DIR, CARDS_DIR, PENDING_DIR, SETS_FILE,
+    card_image_targets, download_all, int_or_null,
+    set_image_targets, sq,
+)
 
 # ---------------------------------------------------------------------------
 # Pi connection — update these to match your setup
@@ -41,63 +32,6 @@ PI_HOST    = "pi2-pidex.local"          # or Tailscale IP when off-network
 PI_DB_PATH = "~/pidex/instance/pidex.db"
 PI_IMG_DIR = "/var/pidex/images/"
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _parse_release_date(raw: str | None) -> str | None:
-    """Convert '1999/01/09' to '1999-01-09' for SQL."""
-    if not raw:
-        return None
-    return datetime.strptime(raw, "%Y/%m/%d").strftime("%Y-%m-%d")
-
-
-def _sq(value: str | None) -> str:
-    """Wrap a value in single quotes for SQL, escaping internal quotes."""
-    if value is None:
-        return "NULL"
-    return "'" + str(value).replace("'", "''") + "'"
-
-
-def _int_or_null(value) -> str:
-    """Return an integer literal or NULL for SQL."""
-    if value is None:
-        return "NULL"
-    try:
-        return str(int(value))
-    except (ValueError, TypeError):
-        return "NULL"
-
-
-def _download(url: str, dest: Path) -> bool:
-    """Download a remote file to dest, skipping if it already exists."""
-    import requests
-    if dest.exists():
-        return True
-    try:
-        response = requests.get(url, timeout=15)
-        response.raise_for_status()
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(response.content)
-        return True
-    except Exception as exc:
-        print(f"    [WARN] Could not download {url}: {exc}")
-        return False
-
-
-def _download_all(targets: list[tuple[str, Path]], workers: int = 10) -> None:
-    """Download a list of (url, dest) pairs concurrently."""
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    pending = [(url, dest) for url, dest in targets if not dest.exists()]
-    if not pending:
-        print("  All images already downloaded, skipping.")
-        return
-    print(f"  Downloading {len(pending)} images...")
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = {executor.submit(_download, url, dest): dest for url, dest in pending}
-        for future in as_completed(futures):
-            future.result()
-
 
 # ---------------------------------------------------------------------------
 # SQL generation
@@ -106,7 +40,6 @@ def _download_all(targets: list[tuple[str, Path]], workers: int = 10) -> None:
 def _generate_sql(set_id: str) -> Path:
     """Generate SQL insert file for the given set into scripts/pending/."""
 
-    # Load set metadata
     with open(SETS_FILE) as f:
         sets_data: list[dict] = json.load(f)
 
@@ -114,7 +47,6 @@ def _generate_sql(set_id: str) -> Path:
     if not set_meta:
         raise ValueError(f"Set '{set_id}' not found in {SETS_FILE}")
 
-    # Load curated card data
     card_file = CARDS_DIR / f"{set_id}.json"
     if not card_file.exists():
         raise FileNotFoundError(
@@ -137,20 +69,23 @@ def _generate_sql(set_id: str) -> Path:
     lines.append("")
 
     # Insert set row
-    release_date = _parse_release_date(set_meta.get("releaseDate"))
+    release_date = None
+    if raw_date := set_meta.get("releaseDate"):
+        release_date = datetime.strptime(raw_date, "%Y/%m/%d").strftime("%Y-%m-%d")
+
     lines.append("-- Set")
     lines.append(
         f"INSERT OR IGNORE INTO sets "
         f"(id, code, name, release_date, nr_official_cards, nr_total_cards, series_name, logo_url, symbol_url) VALUES ("
-        f"{_sq(set_id)}, "
-        f"{_sq(set_meta.get('ptcgoCode', ''))}, "
-        f"{_sq(set_meta['name'])}, "
-        f"{_sq(release_date)}, "
-        f"{_int_or_null(set_meta.get('printedTotal'))}, "
-        f"{_int_or_null(set_meta.get('total'))}, "
-        f"{_sq(set_meta['series'])}, "
-        f"{_sq(set_meta.get('images', {}).get('logo'))}, "
-        f"{_sq(set_meta.get('images', {}).get('symbol'))}"
+        f"{sq(set_id)}, "
+        f"{sq(set_meta.get('ptcgoCode', ''))}, "
+        f"{sq(set_meta['name'])}, "
+        f"{sq(release_date)}, "
+        f"{int_or_null(set_meta.get('printedTotal'))}, "
+        f"{int_or_null(set_meta.get('total'))}, "
+        f"{sq(set_meta['series'])}, "
+        f"{sq(set_meta.get('images', {}).get('logo'))}, "
+        f"{sq(set_meta.get('images', {}).get('symbol'))}"
         f");"
     )
     lines.append("")
@@ -167,36 +102,36 @@ def _generate_sql(set_id: str) -> Path:
         lines.append(
             f"INSERT OR IGNORE INTO cards "
             f"(id, super_type, name, set_code, set_number, rarity, norm_rarity, norm_rarity_code, image_url, hd_image_url, flavor) VALUES ("
-            f"{_sq(card_id)}, "
-            f"{_sq(entry.get('supertype'))}, "
-            f"{_sq(entry['name'])}, "
-            f"{_sq(set_id)}, "
-            f"{_sq(entry.get('number'))}, "
-            f"{_sq(rarity_raw or None)}, "
-            f"{_sq(norm.name if norm else None)}, "
-            f"{_int_or_null(norm.code if norm else None)}, "
-            f"{_sq(img_small)}, "
-            f"{_sq(img_large)}, "
-            f"{_sq(entry.get('flavorText'))}"
+            f"{sq(card_id)}, "
+            f"{sq(entry.get('supertype'))}, "
+            f"{sq(entry['name'])}, "
+            f"{sq(set_id)}, "
+            f"{sq(entry.get('number'))}, "
+            f"{sq(rarity_raw or None)}, "
+            f"{sq(norm.name if norm else None)}, "
+            f"{int_or_null(norm.code if norm else None)}, "
+            f"{sq(img_small)}, "
+            f"{sq(img_large)}, "
+            f"{sq(entry.get('flavorText'))}"
             f");"
         )
 
         for sub in entry.get("subtypes", []):
             lines.append(
                 f"INSERT OR IGNORE INTO card_sub_types (card_id, sub_type) VALUES "
-                f"({_sq(card_id)}, {_sq(sub)});"
+                f"({sq(card_id)}, {sq(sub)});"
             )
 
         for energy in entry.get("types", []):
             lines.append(
                 f"INSERT OR IGNORE INTO card_energy_types (card_id, energy_type) VALUES "
-                f"({_sq(card_id)}, {_sq(energy)});"
+                f"({sq(card_id)}, {sq(energy)});"
             )
 
         for dex_num in entry.get("nationalPokedexNumbers", []):
             lines.append(
                 f"INSERT OR IGNORE INTO card_pokedex_numbers (card_id, pokedex_number) VALUES "
-                f"({_sq(card_id)}, {_int_or_null(dex_num)});"
+                f"({sq(card_id)}, {int_or_null(dex_num)});"
             )
 
         lines.append("")
@@ -213,33 +148,11 @@ def _generate_sql(set_id: str) -> Path:
 # Image downloading
 # ---------------------------------------------------------------------------
 
-def _download_images(set_id: str) -> None:
+def _download_images(set_id: str, set_meta: dict, cards_data: list[dict]) -> None:
     """Download card images and set logo/symbol for the given set."""
-    card_file = CARDS_DIR / f"{set_id}.json"
-    with open(card_file) as f:
-        cards_data: list[dict] = json.load(f)
-
-    with open(SETS_FILE) as f:
-        sets_data: list[dict] = json.load(f)
-    set_meta = next((s for s in sets_data if s["id"] == set_id), None)
-
-    targets: list[tuple[str, Path]] = []
-
-    # Set logo and symbol
-    if set_meta:
-        if logo_url := set_meta.get("images", {}).get("logo"):
-            targets.append((logo_url, SET_LOGO_DIR / f"{set_id}.png"))
-        if symbol_url := set_meta.get("images", {}).get("symbol"):
-            targets.append((symbol_url, SET_SYMBOL_DIR / f"{set_id}.png"))
-
-    # Card images (small only)
-    for entry in cards_data:
-        if img_small := entry.get("images", {}).get("small"):
-            raw_number = entry.get("number", entry["id"])
-            targets.append((img_small, CARD_IMAGE_DIR / set_id / f"{raw_number}.png"))
-
-    _download_all(targets)
-    print(f"  ✓ Images done")
+    targets = set_image_targets(set_id, set_meta) + card_image_targets(set_id, cards_data)
+    download_all(targets)
+    print("  ✓ Images done")
 
 
 # ---------------------------------------------------------------------------
@@ -249,7 +162,7 @@ def _download_images(set_id: str) -> None:
 def _push(set_id: str, sql_file: Path) -> None:
     """Rsync images to Pi and apply SQL over SSH."""
     pi = f"{PI_USER}@{PI_HOST}"
-    local_img = str(CARD_IMAGE_DIR / set_id) + "/"
+    local_img  = str(CARD_IMAGE_DIR / set_id) + "/"
     remote_img = f"{PI_IMG_DIR}cards/{set_id}/"
 
     print(f"\nPushing to {PI_HOST}...")
@@ -264,11 +177,11 @@ def _push(set_id: str, sql_file: Path) -> None:
         print("  [ERROR] rsync failed. Aborting push.")
         return
 
-    # Apply SQL on Pi
+    # Stream SQL file to Pi and apply it
     print("  Applying SQL...")
-    apply_cmd = f"sqlite3 {PI_DB_PATH} < ~/pidex/scripts/pending/{set_id}.sql"
+    copy_cmd = f"mkdir -p ~/pidex/scripts/pending && cat > ~/pidex/scripts/pending/{set_id}.sql"
     result = subprocess.run(
-        ["ssh", pi, f"mkdir -p ~/pidex/scripts/pending && cat > ~/pidex/scripts/pending/{set_id}.sql"],
+        ["ssh", pi, copy_cmd],
         input=sql_file.read_bytes(),
         check=False
     )
@@ -276,6 +189,7 @@ def _push(set_id: str, sql_file: Path) -> None:
         print("  [ERROR] Failed to copy SQL file to Pi.")
         return
 
+    apply_cmd = f"sqlite3 {PI_DB_PATH} < ~/pidex/scripts/pending/{set_id}.sql"
     result = subprocess.run(["ssh", pi, apply_cmd], check=False)
     if result.returncode != 0:
         print("  [ERROR] Failed to apply SQL on Pi.")
@@ -305,8 +219,18 @@ def main() -> None:
 
     print(f"Processing set: {set_id}")
 
+    # Load data once and pass it through to avoid reading files twice
+    with open(SETS_FILE) as f:
+        sets_data: list[dict] = json.load(f)
+    set_meta = next((s for s in sets_data if s["id"] == set_id), None)
+    if not set_meta:
+        raise ValueError(f"Set '{set_id}' not found in {SETS_FILE}")
+
+    with open(CARDS_DIR / f"{set_id}.json") as f:
+        cards_data: list[dict] = json.load(f)
+
     sql_file = _generate_sql(set_id)
-    _download_images(set_id)
+    _download_images(set_id, set_meta, cards_data)
 
     if args.push:
         _push(set_id, sql_file)

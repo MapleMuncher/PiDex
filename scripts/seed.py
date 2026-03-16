@@ -1,46 +1,29 @@
 import json
-import re
 import sys
 from datetime import datetime
 from pathlib import Path
 
-import requests
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
 # ---------------------------------------------------------------------------
-# Path setup — seed.py lives in scripts/, app/ and images/ live in the
-# project root one level up. Run from the project root:
+# Path setup — seed.py lives in scripts/, app/ lives in the project root.
+# Run from the project root:
 #   python scripts/seed.py
 # ---------------------------------------------------------------------------
-_SCRIPTS_DIR = Path(__file__).parent          # pidex/scripts/
-_PROJECT_DIR = _SCRIPTS_DIR.parent            # pidex/
+_SCRIPTS_DIR = Path(__file__).parent
+_PROJECT_DIR = _SCRIPTS_DIR.parent
 
-sys.path.insert(0, str(_SCRIPTS_DIR))         # for rarity.py
-sys.path.insert(0, str(_PROJECT_DIR))         # for app/
+sys.path.insert(0, str(_SCRIPTS_DIR))   # for rarity.py and utils.py
+sys.path.insert(0, str(_PROJECT_DIR))   # for app/
 
-from app import create_app, db               # noqa: E402
-from app.models import (                     # noqa: E402
+from app import create_app, db                           # noqa: E402
+from app.models import (                                 # noqa: E402
     Card, CardEnergyType, CardPokedexNumber, CardSubType,
     Pokemon, Set,
 )
-from rarity import normalize_rarity          # noqa: E402
-
-# ---------------------------------------------------------------------------
-# Path constants
-# ---------------------------------------------------------------------------
-PIDEX_DATA_DIR = _PROJECT_DIR.parent / "PiDexData"   # sibling repo
-
-# On the Pi, images are served from /var/pidex/images/ (outside the repo).
-# When seeding on desktop, write to images/ inside the project and sync later.
-IMAGE_DIR = _PROJECT_DIR / "images"
-
-SETS_FILE    = PIDEX_DATA_DIR / "sets" / "all.json"
-POKEMON_FILE = PIDEX_DATA_DIR / "pokemon" / "subset.json"
-CARDS_DIR    = PIDEX_DATA_DIR / "cards_subset"
-
-CARD_IMAGE_DIR  = IMAGE_DIR / "cards"
-SET_LOGO_DIR    = IMAGE_DIR / "sets" / "logos"
-SET_SYMBOL_DIR  = IMAGE_DIR / "sets" / "symbols"
+from rarity import normalize_rarity                      # noqa: E402
+from utils import (                                      # noqa: E402
+    CARDS_DIR, POKEMON_FILE, SETS_FILE,
+    card_image_targets, download_all, set_image_targets,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -49,38 +32,11 @@ SET_SYMBOL_DIR  = IMAGE_DIR / "sets" / "symbols"
 STAGE_MAP = {"Baby": -1, "Basic": 0, "Stage 1": 1, "Stage 2": 2}
 
 
-def _download(url: str, dest: Path) -> bool:
-    """Download a remote file to dest, skipping if it already exists.
-    Returns True on success."""
-    if dest.exists():
-        return True
-    try:
-        response = requests.get(url, timeout=15)
-        response.raise_for_status()
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(response.content)
-        return True
-    except Exception as exc:
-        print(f"    [WARN] Could not download {url}: {exc}")
-        return False
-
-
-def _download_all(targets: list[tuple[str, Path]], workers: int = 10) -> None:
-    """Download a list of (url, dest) pairs concurrently, skipping existing files."""
-    pending = [(url, dest) for url, dest in targets if not dest.exists()]
-    if not pending:
-        return
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = {executor.submit(_download, url, dest): dest for url, dest in pending}
-        for future in as_completed(futures):
-            future.result()  # re-raises any exception from _download
-
-
 # ---------------------------------------------------------------------------
-# Step 1: Series and Sets
+# Step 1: Sets
 # ---------------------------------------------------------------------------
 
-def seed_series_and_sets() -> None:
+def seed_sets() -> None:
     print("Seeding sets...")
 
     with open(SETS_FILE) as f:
@@ -88,9 +44,7 @@ def seed_series_and_sets() -> None:
 
     image_targets: list[tuple[str, Path]] = []
     for entry in sets_data:
-        set_id     = entry["id"]
-        logo_url   = entry.get("images", {}).get("logo")
-        symbol_url = entry.get("images", {}).get("symbol")
+        set_id = entry["id"]
 
         release_date = None
         if raw_date := entry.get("releaseDate"):
@@ -105,21 +59,17 @@ def seed_series_and_sets() -> None:
                 nr_official_cards=entry.get("printedTotal"),
                 nr_total_cards=entry.get("total"),
                 series_name=entry["series"],
-                logo_url=logo_url,
-                symbol_url=symbol_url,
+                logo_url=entry.get("images", {}).get("logo"),
+                symbol_url=entry.get("images", {}).get("symbol"),
             ))
 
-        if logo_url:
-            image_targets.append((logo_url,   SET_LOGO_DIR   / f"{set_id}.png"))
-        if symbol_url:
-            image_targets.append((symbol_url, SET_SYMBOL_DIR / f"{set_id}.png"))
+        image_targets.extend(set_image_targets(set_id, entry))
 
     db.session.commit()
     print(f"  ✓ {len(sets_data)} sets")
-    print(f"  Downloading {len(image_targets)} set images...")
-    _download_all(image_targets)
+    download_all(image_targets)
     print("  ✓ Set images done")
-    
+
 
 # ---------------------------------------------------------------------------
 # Step 2: Pokémon
@@ -162,13 +112,12 @@ def seed_cards() -> None:
     total = 0
 
     for card_file in sorted(CARDS_DIR.glob("*.json")):
-        set_id = card_file.stem  # filename without extension, e.g. "base1"
+        set_id = card_file.stem
 
         with open(card_file) as f:
             cards_data: list[dict] = json.load(f)
 
         print(f"  {set_id} ({len(cards_data)} cards)...")
-        image_targets: list[tuple[str, Path]] = []
 
         for entry in cards_data:
             card_id = entry["id"]
@@ -205,17 +154,10 @@ def seed_cards() -> None:
                     card_id=card_id, pokedex_number=dex_num
                 ))
 
-            # Collect image target for concurrent download after DB inserts.
-            # Use the raw card number as the filename (e.g. "1.png") to match
-            # the images/cards/<set_code>/ directory structure.
-            if img_small:
-                raw_number = entry.get("number", card_id)
-                image_targets.append((img_small, CARD_IMAGE_DIR / set_id / f"{raw_number}.png"))
-
             total += 1
 
         db.session.commit()
-        _download_all(image_targets)
+        download_all(card_image_targets(set_id, cards_data))
 
     print(f"  ✓ {total} cards total")
 
@@ -227,7 +169,7 @@ def seed_cards() -> None:
 def seed() -> None:
     app = create_app()
     with app.app_context():
-        seed_series_and_sets()
+        seed_sets()
         seed_pokemon()
         seed_cards()
     print("\nSeeding complete.")
