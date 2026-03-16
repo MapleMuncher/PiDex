@@ -21,7 +21,7 @@ sys.path.insert(0, str(_PROJECT_DIR))         # for app/
 from app import create_app, db               # noqa: E402
 from app.models import (                     # noqa: E402
     Card, CardEnergyType, CardPokedexNumber, CardSubType,
-    Pokemon, Series, Set,
+    Pokemon, Set,
 )
 from rarity import normalize_rarity          # noqa: E402
 
@@ -47,23 +47,6 @@ SET_SYMBOL_DIR  = IMAGE_DIR / "sets" / "symbols"
 # ---------------------------------------------------------------------------
 
 STAGE_MAP = {"Baby": -1, "Basic": 0, "Stage 1": 1, "Stage 2": 2}
-
-
-def _series_id_from_set_id(set_id: str) -> str:
-    """Strip trailing digits to derive a series ID, e.g. 'swsh3' → 'swsh'.
-    Also strips a trailing 'p' when the set_id contains no digits at all,
-    treating it as a promo suffix, e.g. 'bwp' → 'bw'.
-
-    Series codes that naturally end in 'p' (e.g. 'pop') are preserved because
-    their set IDs always include digits ('pop1', 'pop2'), so stripping digits
-    yields 'pop' with no further 'p'-stripping applied.
-    """
-    base = re.sub(r"\d+$", "", set_id)
-    # If nothing was stripped (set_id has no trailing digits) and it ends in
-    # 'p', treat the 'p' as a promo suffix and remove it.
-    if base == set_id and set_id.endswith("p"):
-        base = base[:-1]
-    return base or set_id
 
 
 def _download(url: str, dest: Path) -> bool:
@@ -93,44 +76,19 @@ def _download_all(targets: list[tuple[str, Path]], workers: int = 10) -> None:
             future.result()  # re-raises any exception from _download
 
 
-def _parse_set_number(value: str | None) -> int | None:
-    """Convert a card number string to int.
-    Returns None for non-numeric values like 'TG01' or 'SWSH001'."""
-    try:
-        return int(value)
-    except (ValueError, TypeError):
-        return None
-
-
 # ---------------------------------------------------------------------------
 # Step 1: Series and Sets
 # ---------------------------------------------------------------------------
 
 def seed_series_and_sets() -> None:
-    print("Seeding series and sets...")
+    print("Seeding sets...")
 
     with open(SETS_FILE) as f:
         sets_data: list[dict] = json.load(f)
 
-    # Build a series_name → series_id mapping using the first set encountered
-    # for each series name. This ensures all sets with the same series name
-    # (including promos like 'swshp') share a single consistent series ID.
-    series_name_to_id: dict[str, str] = {}
-    for entry in sets_data:
-        series_name = entry["series"]
-        if series_name not in series_name_to_id:
-            series_name_to_id[series_name] = _series_id_from_set_id(entry["id"])
-
-    # Upsert Series rows
-    for series_name, series_id in series_name_to_id.items():
-        if not db.session.get(Series, series_id):
-            db.session.add(Series(id=series_id, name=series_name))
-
-    # Upsert Set rows and collect image download targets
     image_targets: list[tuple[str, Path]] = []
     for entry in sets_data:
         set_id     = entry["id"]
-        series_id  = series_name_to_id[entry["series"]]
         logo_url   = entry.get("images", {}).get("logo")
         symbol_url = entry.get("images", {}).get("symbol")
 
@@ -146,7 +104,7 @@ def seed_series_and_sets() -> None:
                 release_date=release_date,
                 nr_official_cards=entry.get("printedTotal"),
                 nr_total_cards=entry.get("total"),
-                series_id=series_id,
+                series_name=entry["series"],
                 logo_url=logo_url,
                 symbol_url=symbol_url,
             ))
@@ -157,11 +115,11 @@ def seed_series_and_sets() -> None:
             image_targets.append((symbol_url, SET_SYMBOL_DIR / f"{set_id}.png"))
 
     db.session.commit()
-    print(f"  ✓ {len(series_name_to_id)} series, {len(sets_data)} sets")
+    print(f"  ✓ {len(sets_data)} sets")
     print(f"  Downloading {len(image_targets)} set images...")
     _download_all(image_targets)
     print("  ✓ Set images done")
-
+    
 
 # ---------------------------------------------------------------------------
 # Step 2: Pokémon
