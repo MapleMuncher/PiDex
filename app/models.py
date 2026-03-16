@@ -1,28 +1,6 @@
 from app import db
 
 
-class Series(db.Model):
-    """
-    Represents a Pokémon TCG series (e.g. Sword & Shield).
-
-    A series groups multiple sets released under the same brand. Series 
-    data is denormalised into the Set table and is not managed 
-    separately through the web app — it is populated by the seed and 
-    update scripts only.
-
-    Attributes:
-        id (str): Short series code, e.g. "swsh".
-        name (str): Full series name, e.g. "Sword & Shield".
-    """
-
-    __tablename__ = "series"
-
-    id = db.Column(db.String, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-
-    sets = db.relationship("Set", back_populates="series")
-
-
 class Set(db.Model):
     """
     Represents a Pokémon TCG expansion set.
@@ -40,7 +18,8 @@ class Set(db.Model):
             number range.
         nr_total_cards (int): Total cards including secret rares beyond 
             the official count.
-        series_id (str): Foreign key to the parent Series.
+        series_name (str): Name of the parent Series, 
+            e.g. "Sword & Shield".
         logo_url (str): Fallback remote URL for the set logo.
         symbol_url (str): Fallback remote URL for the set symbol.
     """
@@ -53,13 +32,10 @@ class Set(db.Model):
     release_date = db.Column(db.Date, nullable=True)
     nr_official_cards = db.Column(db.Integer, nullable=True)
     nr_total_cards = db.Column(db.Integer, nullable=True)
-    series_id = db.Column(
-        db.String, db.ForeignKey("series.id"), nullable=False
-    )
+    series_name = db.Column(db.String, nullable=False)
     logo_url = db.Column(db.String, nullable=True)
     symbol_url = db.Column(db.String, nullable=True)
 
-    series = db.relationship("Series", back_populates="sets")
     cards = db.relationship("Card", back_populates="set")
 
 
