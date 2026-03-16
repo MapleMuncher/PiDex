@@ -1,5 +1,5 @@
 """
-Shared utilities for scripts/seed.py and scripts/update_set.py.
+Shared utilities for seed.py, curate_set.py, and insert_set.py.
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -22,7 +22,49 @@ SET_SYMBOL_DIR = IMAGE_DIR / "sets" / "symbols"
 SETS_FILE    = PIDEX_DATA_DIR / "sets" / "all.json"
 POKEMON_FILE = PIDEX_DATA_DIR / "pokemon" / "subset.json"
 CARDS_DIR    = PIDEX_DATA_DIR / "cards_subset"
+RAW_CARDS_DIR = PIDEX_DATA_DIR / "cards"
 PENDING_DIR  = _SCRIPTS_DIR / "pending"
+
+# ---------------------------------------------------------------------------
+# Filters
+# ---------------------------------------------------------------------------
+
+# Normalised rarities allowed through the rarity filter
+ALLOWED_RARITIES = {"Common", "Uncommon", "Rare", "Double Rare", "Holo Rare"}
+
+# Pokédex numbers allowed through the Pokédex filter
+_POKEDEX_FILTER: set[int] = (
+    set(range(1, 252))       # Gen 1 & 2
+    | set(range(252, 255))   # Treecko, Grovyle, Sceptile
+    | set(range(273, 276))   # Seedot, Nuzleaf, Shiftry
+    | set(range(280, 283))   # Ralts, Kirlia, Gardevoir
+    | {285, 286}             # Shroomish, Breloom
+    | set(range(304, 307))   # Aron, Lairon, Aggron
+    | {307, 308}             # Meditite, Medicham
+    | set(range(328, 331))   # Trapinch, Vibrava, Flygon
+    | {335}                  # Zangoose
+    | {349, 350}             # Feebas, Milotic
+    | {359}                  # Absol
+    | set(range(363, 366))   # Spheal, Sealeo, Walrein
+    | set(range(371, 374))   # Bagon, Shelgon, Salamence
+    | set(range(374, 377))   # Beldum, Metang, Metagross
+    | set(range(377, 385))   # Gen 3 legendaries
+    | set(range(403, 406))   # Shinx, Luxio, Luxray
+    | {447, 448}             # Riolu, Lucario
+    | {461}                  # Weavile
+    | {475}                  # Gallade
+)
+
+
+def passes_rarity_filter(norm_rarity: str | None) -> bool:
+    """Return True if the normalised rarity is in the allowed set."""
+    return norm_rarity in ALLOWED_RARITIES
+
+
+def passes_pokedex_filter(pokedex_numbers: list[int]) -> bool:
+    """Return True if at least one Pokédex number is in the allowed set."""
+    return any(n in _POKEDEX_FILTER for n in pokedex_numbers)
+
 
 # ---------------------------------------------------------------------------
 # Image downloading
@@ -55,6 +97,7 @@ def download_all(targets: list[tuple[str, Path]], workers: int = 10) -> None:
         for future in as_completed(futures):
             future.result()  # re-raises any exception from download
 
+
 # ---------------------------------------------------------------------------
 # Image target builders
 # ---------------------------------------------------------------------------
@@ -80,7 +123,7 @@ def card_image_targets(set_id: str, cards_data: list[dict]) -> list[tuple[str, P
 
 
 # ---------------------------------------------------------------------------
-# SQL helpers (used by update_set.py)
+# SQL helpers (used by insert_set.py)
 # ---------------------------------------------------------------------------
 
 def sq(value) -> str:
