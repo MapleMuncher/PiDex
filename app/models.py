@@ -18,7 +18,7 @@ class Set(db.Model):
             number range.
         nr_total_cards (int): Total cards including secret rares beyond 
             the official count.
-        series_name (str): Name of the parent Series, 
+        series_name (str): Name of the series this set belongs to,
             e.g. "Sword & Shield".
         logo_url (str): Fallback remote URL for the set logo.
         symbol_url (str): Fallback remote URL for the set symbol.
@@ -102,8 +102,8 @@ class Card(db.Model):
     resolution images, which are fetched on demand rather than stored 
     locally.
 
-    The card's ownership status (WANTED / OWNED) is tracked on the Slot 
-    in the Unassigned binder (B000) rather than on the Card itself.
+    Ownership status (WANTED / OWNED) is tracked in the Collection 
+    table, not on the Card itself.
 
     Attributes:
         id (str): Combination of set code and card number, 
@@ -112,11 +112,12 @@ class Card(db.Model):
             "Energy".
         name (str): Name printed on the card.
         set_code (str): Foreign key to the parent Set.
-        set_number (int): Card's number within the set.
+        set_number (str): Card's number within the set. May be 
+            non-numeric, e.g. "TG01".
         rarity (str): Raw rarity string from source data,
             e.g. "Holo Rare V".
         norm_rarity (str): Normalised rarity label,
-            e.g. "Holo".
+            e.g. "Holo Rare".
         norm_rarity_code (int): Integer for sorting by rarity.
             1 = Common through 10 = Special.
         image_url (str): Fallback remote URL for the standard-resolution 
@@ -149,6 +150,9 @@ class Card(db.Model):
     )
     pokedex_numbers = db.relationship(
         "CardPokedexNumber", back_populates="card"
+    )
+    collection_entry = db.relationship(
+        "Collection", back_populates="card", uselist=False
     )
     slots = db.relationship(
         "Slot", back_populates="card", foreign_keys="Slot.card_id"
@@ -241,6 +245,37 @@ class CardPokedexNumber(db.Model):
     )
 
 
+class Collection(db.Model):
+    """
+    Tracks the ownership status of a card in the user's collection.
+
+    A card exists in the Collection table once it has been marked as
+    either WANTED or OWNED. Cards not present in this table are
+    considered available (in the database) but not yet tracked.
+
+    copies_owned is only relevant when status is OWNED. It allows the
+    app to accurately report ownership when the same card appears in
+    multiple binders — e.g. a Scyther card in both a Gen 1 binder and
+    a Scyther binder.
+
+    Attributes:
+        card_id (str): Foreign key to the Card. Primary key.
+        status (str): Ownership status. One of "WANTED" or "OWNED".
+        copies_owned (int): Number of physical copies owned. Defaults
+            to 1. Only meaningful when status is "OWNED".
+    """
+
+    __tablename__ = "collection"
+
+    card_id = db.Column(
+        db.String, db.ForeignKey("cards.id"), primary_key=True
+    )
+    status = db.Column(db.String, nullable=False)
+    copies_owned = db.Column(db.Integer, nullable=False, default=1)
+
+    card = db.relationship("Card", back_populates="collection_entry")
+
+
 class Binder(db.Model):
     """
     Represents a physical card binder.
@@ -249,13 +284,8 @@ class Binder(db.Model):
     shape and a total page count. Binders can optionally have 
     restriction rules that limit which cards are allowed in their slots.
 
-    The Unassigned binder (id="B000") is a special system binder that 
-    acts as a holding area for all cards marked as WANTED or OWNED that 
-    have not yet been added to any other binder.
-
     Attributes:
-        id (str): Binder identifier, e.g. "B001". "B000" is reserved for 
-            the Unassigned binder.
+        id (str): Binder identifier, e.g. "B001".
         name (str): Display name of the binder.
         page_shape (str): Page layout code, e.g. "B3A" for a 3x3 
             asymmetrical layout. See DB design for the full list of 
@@ -291,8 +321,9 @@ class Slot(db.Model):
     - Card-reserved: reserved for one specific card only.
         reserved_card_id is set.
 
-    The card_id field holds the card currently occupying the slot. The 
-    card_status field tracks whether that card is WANTED or OWNED.
+    The card_id field holds the card currently occupying the slot.
+    Ownership status is not stored on the slot — it is looked up from
+    the Collection table via the card's collection_entry relationship.
 
     Position within the binder is stored as a float using fractional 
     indexing, allowing reordering by updating only a single row. When 
@@ -305,12 +336,9 @@ class Slot(db.Model):
             slots within the binder.
         pokemon_id (int): If set, only cards featuring this Pokémon are 
             allowed in this slot.
-        card_id (str): The card currently in this slot, NULL if the slot 
-            is empty.
+        card_id (str): The card currently in this slot, NULL if empty.
         reserved_card_id (str): If set, only this specific card is 
             allowed in this slot.
-        card_status (str): Ownership status of the card in this slot. 
-            One of NULL, "WANTED", or "OWNED".
     """
 
     __tablename__ = "slots"
@@ -328,7 +356,6 @@ class Slot(db.Model):
     reserved_card_id = db.Column(
         db.String, db.ForeignKey("cards.id"), nullable=True
     )
-    card_status = db.Column(db.String, nullable=True)
 
     binder = db.relationship("Binder", back_populates="slots")
     pokemon = db.relationship("Pokemon", back_populates="slots")
