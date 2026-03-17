@@ -33,7 +33,7 @@ def main() -> None:
         print(f"  Run: python -m scripts.download_set --set {set_id}")
         sys.exit(1)
 
-    with open(raw_file) as f:
+    with open(raw_file, encoding="utf-8") as f:
         raw_cards: list[dict] = json.load(f)
 
     print(f"  {len(raw_cards)} cards in raw set")
