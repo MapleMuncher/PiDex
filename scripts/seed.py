@@ -27,7 +27,7 @@ STAGE_MAP = {"Baby": -1, "Basic": 0, "Stage 1": 1, "Stage 2": 2}
 def seed_sets() -> None:
     print("Seeding sets...")
 
-    with open(SETS_FILE) as f:
+    with open(SETS_FILE, encoding="utf-8") as f:
         sets_data: list[dict] = json.load(f)
 
     image_targets: list[tuple[str, Path]] = []
@@ -66,7 +66,7 @@ def seed_sets() -> None:
 def seed_pokemon() -> None:
     print("Seeding Pokémon...")
 
-    with open(POKEMON_FILE) as f:
+    with open(POKEMON_FILE, encoding="utf-8") as f:
         pokemon_data: list[dict] = json.load(f)
 
     count = 0
@@ -102,7 +102,7 @@ def seed_cards() -> None:
     for card_file in sorted(CARDS_DIR.glob("*.json")):
         set_id = card_file.stem
 
-        with open(card_file) as f:
+        with open(card_file, encoding="utf-8") as f:
             cards_data: list[dict] = json.load(f)
 
         print(f"  {set_id} ({len(cards_data)} cards)...")

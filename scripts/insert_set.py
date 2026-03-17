@@ -213,7 +213,7 @@ def main() -> None:
 
     print(f"Processing set: {set_id}")
 
-    with open(SETS_FILE) as f:
+    with open(SETS_FILE, encoding="utf-8") as f:
         sets_data: list[dict] = json.load(f)
     set_meta = next((s for s in sets_data if s["id"] == set_id), None)
     if not set_meta:
@@ -225,7 +225,7 @@ def main() -> None:
         print(f"  Run: python -m scripts.curate_set --set {set_id}")
         sys.exit(1)
 
-    with open(card_file) as f:
+    with open(card_file, encoding="utf-8") as f:
         cards_data: list[dict] = json.load(f)
 
     sql_file = _generate_sql(set_id, set_meta, cards_data)
