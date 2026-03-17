@@ -1,5 +1,6 @@
 import argparse
 import json
+import sqlite3
 import subprocess
 import sys
 from datetime import datetime
@@ -38,7 +39,6 @@ def _generate_sql(set_id: str, set_meta: dict, cards_data: list[dict]) -> Path:
     lines.append("BEGIN TRANSACTION;")
     lines.append("")
 
-    # Insert set row
     release_date = None
     if raw_date := set_meta.get("releaseDate"):
         release_date = datetime.strptime(raw_date, "%Y/%m/%d").strftime("%Y-%m-%d")
@@ -60,7 +60,6 @@ def _generate_sql(set_id: str, set_meta: dict, cards_data: list[dict]) -> Path:
     )
     lines.append("")
 
-    # Insert cards and related rows
     lines.append("-- Cards")
     for entry in cards_data:
         card_id    = entry["id"]
@@ -126,6 +125,29 @@ def _download_images(set_id: str, set_meta: dict, cards_data: list[dict]) -> Non
 
 
 # ---------------------------------------------------------------------------
+# Apply locally
+# ---------------------------------------------------------------------------
+
+def _apply_local(sql_file: Path) -> None:
+    """Apply the generated SQL to the local database using Python's sqlite3."""
+    db_path = Path("instance/pidex.db")
+    if not db_path.exists():
+        print(f"  [ERROR] Local database not found at {db_path}.")
+        return
+    print(f"  Applying SQL to local database...")
+    sql = sql_file.read_text(encoding="utf-8")
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.executescript(sql)
+        conn.commit()
+        print("  ✓ Applied successfully.")
+    except Exception as exc:
+        print(f"  [ERROR] {exc}")
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
 # Push to Pi
 # ---------------------------------------------------------------------------
 
@@ -137,7 +159,6 @@ def _push(set_id: str, sql_file: Path) -> None:
 
     print(f"\nPushing to {PI_HOST}...")
 
-    # Rsync card images
     print("  Syncing images...")
     result = subprocess.run(
         ["rsync", "-av", "--progress", local_img, f"{pi}:{remote_img}"],
@@ -147,7 +168,6 @@ def _push(set_id: str, sql_file: Path) -> None:
         print("  [ERROR] rsync failed. Aborting push.")
         return
 
-    # Stream SQL file to Pi and apply it
     print("  Applying SQL...")
     copy_cmd = f"mkdir -p ~/pidex/scripts/pending && cat > ~/pidex/scripts/pending/{set_id}.sql"
     result = subprocess.run(
@@ -181,6 +201,10 @@ def main() -> None:
         help="Set code to process, e.g. swsh12"
     )
     parser.add_argument(
+        "--local", action="store_true",
+        help="Apply the generated SQL to the local database for testing."
+    )
+    parser.add_argument(
         "--push", action="store_true",
         help="After generating SQL and downloading images, push to the Pi."
     )
@@ -189,7 +213,6 @@ def main() -> None:
 
     print(f"Processing set: {set_id}")
 
-    # Load data once and pass it through to avoid reading files twice
     with open(SETS_FILE) as f:
         sets_data: list[dict] = json.load(f)
     set_meta = next((s for s in sets_data if s["id"] == set_id), None)
@@ -208,10 +231,14 @@ def main() -> None:
     sql_file = _generate_sql(set_id, set_meta, cards_data)
     _download_images(set_id, set_meta, cards_data)
 
-    if args.push:
+    if args.local:
+        _apply_local(sql_file)
+    elif args.push:
         _push(set_id, sql_file)
     else:
-        print(f"\nDone. To push to the Pi, run:")
+        print(f"\nDone. To apply locally run:")
+        print(f"  python -m scripts.insert_set --set {set_id} --local")
+        print(f"To push to the Pi run:")
         print(f"  python -m scripts.insert_set --set {set_id} --push")
 
 
