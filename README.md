@@ -2,8 +2,7 @@
 From the PiDex root run the following commands:
 
 ```bash
-python scripts/download_set.py --set swsh12
-python scripts/curate_set.py --set swsh12
-# Review PiDexData/cards_subset/swsh12.json
-python scripts/insert_set.py --set swsh12 --push
+python -m scripts.download_set --set swsh12
+python -m scripts.curate_set --set swsh12
+python -m scripts.insert_set --set swsh12 --push
 ```
