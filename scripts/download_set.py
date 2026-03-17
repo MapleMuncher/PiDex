@@ -28,7 +28,7 @@ def _fetch_json(url: str) -> list | dict:
 def _update_sets_file(new_sets: list[dict]) -> None:
     """Merge new set entries into PiDexData/sets/all.json."""
     if SETS_FILE.exists():
-        with open(SETS_FILE) as f:
+        with open(SETS_FILE, encoding="utf-8") as f:
             existing: list[dict] = json.load(f)
     else:
         existing = []
