@@ -1,18 +1,9 @@
 import argparse
 import json
 import sys
-from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Path setup — run from the project root:
-#   python scripts/curate_set.py --set swsh12
-# ---------------------------------------------------------------------------
-_SCRIPTS_DIR = Path(__file__).parent
-
-sys.path.insert(0, str(_SCRIPTS_DIR))
-
-from rarity import normalize_rarity                          # noqa: E402
-from utils import (                                          # noqa: E402
+from scripts.rarity import normalize_rarity
+from scripts.utils import (
     CARDS_DIR, RAW_CARDS_DIR,
     passes_pokedex_filter, passes_rarity_filter,
 )
@@ -39,7 +30,7 @@ def main() -> None:
     raw_file = RAW_CARDS_DIR / f"{set_id}.json"
     if not raw_file.exists():
         print(f"  [ERROR] Raw card file not found at {raw_file}.")
-        print(f"  Run: python scripts/download_set.py --set {set_id}")
+        print(f"  Run: python -m scripts.download_set --set {set_id}")
         sys.exit(1)
 
     with open(raw_file) as f:
@@ -82,7 +73,7 @@ def main() -> None:
     print(f"  Skipped: {skipped_rarity} rarity, {skipped_pokedex} Pokédex")
     print(f"  Written to {dest}")
     print(f"\nReview the output file and make any manual adjustments, then run:")
-    print(f"  python scripts/insert_set.py --set {set_id}")
+    print(f"  python -m scripts.insert_set --set {set_id}")
 
 
 if __name__ == "__main__":

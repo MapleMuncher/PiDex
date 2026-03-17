@@ -25,6 +25,7 @@ CARDS_DIR    = PIDEX_DATA_DIR / "cards_subset"
 RAW_CARDS_DIR = PIDEX_DATA_DIR / "cards"
 PENDING_DIR  = _SCRIPTS_DIR / "pending"
 
+
 # ---------------------------------------------------------------------------
 # Filters
 # ---------------------------------------------------------------------------
@@ -95,7 +96,7 @@ def download_all(targets: list[tuple[str, Path]], workers: int = 10) -> None:
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {executor.submit(download, url, dest): dest for url, dest in pending}
         for future in as_completed(futures):
-            future.result()  # re-raises any exception from download
+            future.result()
 
 
 # ---------------------------------------------------------------------------

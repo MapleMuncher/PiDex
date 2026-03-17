@@ -5,20 +5,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Path setup — update_set.py lives in scripts/, app/ lives in the project
-# root one level up. Run from the project root:
-#   python scripts/update_set.py --set swsh12
-#   python scripts/update_set.py --set swsh12 --push
-# ---------------------------------------------------------------------------
-_SCRIPTS_DIR = Path(__file__).parent
-_PROJECT_DIR = _SCRIPTS_DIR.parent
-
-sys.path.insert(0, str(_SCRIPTS_DIR))   # for rarity.py and utils.py
-sys.path.insert(0, str(_PROJECT_DIR))   # for app/
-
-from rarity import normalize_rarity                      # noqa: E402
-from utils import (                                      # noqa: E402
+from scripts.rarity import normalize_rarity
+from scripts.utils import (
     CARD_IMAGE_DIR, CARDS_DIR, PENDING_DIR, SETS_FILE,
     card_image_targets, download_all, int_or_null,
     set_image_targets, sq,
@@ -37,26 +25,8 @@ PI_IMG_DIR = "/var/pidex/images/"
 # SQL generation
 # ---------------------------------------------------------------------------
 
-def _generate_sql(set_id: str) -> Path:
+def _generate_sql(set_id: str, set_meta: dict, cards_data: list[dict]) -> Path:
     """Generate SQL insert file for the given set into scripts/pending/."""
-
-    with open(SETS_FILE) as f:
-        sets_data: list[dict] = json.load(f)
-
-    set_meta = next((s for s in sets_data if s["id"] == set_id), None)
-    if not set_meta:
-        raise ValueError(f"Set '{set_id}' not found in {SETS_FILE}")
-
-    card_file = CARDS_DIR / f"{set_id}.json"
-    if not card_file.exists():
-        raise FileNotFoundError(
-            f"No curated card file found at {card_file}. "
-            f"Create PiDexData/cards_subset/{set_id}.json first."
-        )
-
-    with open(card_file) as f:
-        cards_data: list[dict] = json.load(f)
-
     PENDING_DIR.mkdir(exist_ok=True)
     sql_file = PENDING_DIR / f"{set_id}.sql"
 
@@ -226,17 +196,23 @@ def main() -> None:
     if not set_meta:
         raise ValueError(f"Set '{set_id}' not found in {SETS_FILE}")
 
-    with open(CARDS_DIR / f"{set_id}.json") as f:
+    card_file = CARDS_DIR / f"{set_id}.json"
+    if not card_file.exists():
+        print(f"  [ERROR] No curated card file found at {card_file}.")
+        print(f"  Run: python -m scripts.curate_set --set {set_id}")
+        sys.exit(1)
+
+    with open(card_file) as f:
         cards_data: list[dict] = json.load(f)
 
-    sql_file = _generate_sql(set_id)
+    sql_file = _generate_sql(set_id, set_meta, cards_data)
     _download_images(set_id, set_meta, cards_data)
 
     if args.push:
         _push(set_id, sql_file)
     else:
         print(f"\nDone. To push to the Pi, run:")
-        print(f"  python scripts/update_set.py --set {set_id} --push")
+        print(f"  python -m scripts.insert_set --set {set_id} --push")
 
 
 if __name__ == "__main__":

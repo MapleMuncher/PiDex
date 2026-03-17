@@ -1,28 +1,16 @@
 import argparse
 import json
 import sys
-from pathlib import Path
+import requests
 
-# ---------------------------------------------------------------------------
-# Path setup — run from the project root:
-#   python scripts/download_set.py --set swsh12
-# ---------------------------------------------------------------------------
-_SCRIPTS_DIR = Path(__file__).parent
-
-sys.path.insert(0, str(_SCRIPTS_DIR))
-
-from utils import PIDEX_DATA_DIR, SETS_FILE   # noqa: E402
-
-import requests   # noqa: E402
+from scripts.utils import PIDEX_DATA_DIR, RAW_CARDS_DIR, SETS_FILE
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-GITHUB_BASE    = "https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master"
-GITHUB_SETS    = f"{GITHUB_BASE}/sets/en.json"
-GITHUB_CARDS   = f"{GITHUB_BASE}/cards/en/{{set_id}}.json"
-
-RAW_CARDS_DIR  = PIDEX_DATA_DIR / "cards"
+GITHUB_BASE  = "https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master"
+GITHUB_SETS  = f"{GITHUB_BASE}/sets/en.json"
+GITHUB_CARDS = f"{GITHUB_BASE}/cards/en/{{set_id}}.json"
 
 
 # ---------------------------------------------------------------------------
@@ -101,7 +89,7 @@ def main() -> None:
         print(f"  ✓ {len(cards)} cards saved to {dest}")
 
     print(f"\nDone. Next step:")
-    print(f"  python scripts/curate_set.py --set {set_id}")
+    print(f"  python -m scripts.curate_set --set {set_id}")
 
 
 if __name__ == "__main__":

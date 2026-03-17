@@ -1,26 +1,14 @@
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Path setup — seed.py lives in scripts/, app/ lives in the project root.
-# Run from the project root:
-#   python scripts/seed.py
-# ---------------------------------------------------------------------------
-_SCRIPTS_DIR = Path(__file__).parent
-_PROJECT_DIR = _SCRIPTS_DIR.parent
-
-sys.path.insert(0, str(_SCRIPTS_DIR))   # for rarity.py and utils.py
-sys.path.insert(0, str(_PROJECT_DIR))   # for app/
-
-from app import create_app, db                           # noqa: E402
-from app.models import (                                 # noqa: E402
+from app import create_app, db
+from app.models import (
     Card, CardEnergyType, CardPokedexNumber, CardSubType,
     Pokemon, Set,
 )
-from rarity import normalize_rarity                      # noqa: E402
-from utils import (                                      # noqa: E402
+from scripts.rarity import normalize_rarity
+from scripts.utils import (
     CARDS_DIR, POKEMON_FILE, SETS_FILE,
     card_image_targets, download_all, set_image_targets,
 )
