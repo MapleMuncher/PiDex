@@ -25,8 +25,11 @@ def remove_set(set_id: str, skip_confirm: bool = False) -> None:
             print(f"  [ERROR] Set '{set_id}' not found in database.")
             return
 
-        # Count what will be deleted
-        card_ids = [c.id for c in s.cards]
+        # Query card IDs directly — avoids loading card objects into the
+        # session, which would cause a StaleDataError after bulk deletes
+        card_ids = [row[0] for row in db.session.execute(
+            db.select(Card.id).where(Card.set_code == set_id)
+        ).all()]
         print(f"  Set:   {s.name} ({set_id})")
         print(f"  Cards: {len(card_ids)}")
 
