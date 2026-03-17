@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+
 import requests
 
 from scripts.utils import PIDEX_DATA_DIR, RAW_CARDS_DIR, SETS_FILE
@@ -38,8 +39,8 @@ def _update_sets_file(new_sets: list[dict]) -> None:
     if added:
         existing.extend(added)
         SETS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(SETS_FILE, "w") as f:
-            json.dump(existing, f, indent=2)
+        with open(SETS_FILE, "w", encoding="utf-8") as f:
+            json.dump(existing, f, indent=2, ensure_ascii=False)
         print(f"  ✓ Added {len(added)} new set(s) to {SETS_FILE.name}")
     else:
         print(f"  ✓ {SETS_FILE.name} already up to date")
@@ -84,8 +85,8 @@ def main() -> None:
         print(f"  Fetching card data from GitHub...")
         cards = _fetch_json(GITHUB_CARDS.format(set_id=set_id))
         RAW_CARDS_DIR.mkdir(parents=True, exist_ok=True)
-        with open(dest, "w") as f:
-            json.dump(cards, f, indent=2)
+        with open(dest, "w", encoding="utf-8") as f:
+            json.dump(cards, f, indent=2, ensure_ascii=False)
         print(f"  ✓ {len(cards)} cards saved to {dest}")
 
     print(f"\nDone. Next step:")

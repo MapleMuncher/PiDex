@@ -66,8 +66,8 @@ def main() -> None:
 
     # Write curated output
     CARDS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(dest, "w") as f:
-        json.dump(passed, f, indent=2)
+    with open(dest, "w", encoding="utf-8") as f:
+        json.dump(passed, f, indent=2, ensure_ascii=False)
 
     print(f"  ✓ {len(passed)} cards passed filters")
     print(f"  Skipped: {skipped_rarity} rarity, {skipped_pokedex} Pokédex")
