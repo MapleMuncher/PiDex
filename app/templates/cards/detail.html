@@ -38,21 +38,8 @@
   {# ------------------------------------------------------------------ #}
   <div class="col-12 col-md-8 col-lg-9">
 
-    {# Card name + collection status badge #}
-    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-      <h1 class="mb-0">{{ card.name }}</h1>
-      {% if collection_entry %}
-        {% if collection_entry.status == 'OWNED' %}
-          <span class="badge badge-owned fs-6">
-            <i class="bi bi-check-lg me-1"></i>Owned
-          </span>
-        {% elif collection_entry.status == 'WANTED' %}
-          <span class="badge badge-wanted fs-6">
-            <i class="bi bi-star-fill me-1"></i>Wanted
-          </span>
-        {% endif %}
-      {% endif %}
-    </div>
+    {# Card name #}
+    <h1 class="mb-1">{{ card.name }}</h1>
 
     {# Set name + year #}
     <p class="text-muted mb-3">
@@ -63,6 +50,43 @@
         &mdash; {{ card.set.release_date.strftime('%Y') }}
       {% endif %}
     </p>
+
+    {# ---------------------------------------------------------------- #}
+    {# Collection status toggle                                          #}
+    {# ---------------------------------------------------------------- #}
+    <div class="mb-4"
+         id="collection-toggle"
+         data-card-id="{{ card.id }}"
+         data-status="{{ collection_entry.status if collection_entry else '' }}">
+
+      <div class="d-flex gap-2 flex-wrap">
+
+        <button
+          class="btn btn-sm collection-btn"
+          data-target-status=""
+          onclick="setCollectionStatus(this)">
+          <i class="bi bi-x-circle me-1"></i>Unmark
+        </button>
+
+        <button
+          class="btn btn-sm collection-btn"
+          data-target-status="WANTED"
+          onclick="setCollectionStatus(this)">
+          <i class="bi bi-star me-1"></i>Wanted
+        </button>
+
+        <button
+          class="btn btn-sm collection-btn"
+          data-target-status="OWNED"
+          onclick="setCollectionStatus(this)">
+          <i class="bi bi-check-circle me-1"></i>Owned
+        </button>
+
+      </div>
+
+      <p class="text-muted small mt-2 mb-0" id="collection-feedback"></p>
+
+    </div>
 
     {# Metadata table #}
     <div class="card">
@@ -107,6 +131,21 @@
             </tr>
           {% endif %}
 
+          {% if card.pokedex_numbers %}
+            <tr>
+              <td class="text-muted fw-semibold">Pokémon</td>
+              <td>
+                {% for cpn in card.pokedex_numbers %}
+                  <a href="{{ url_for('pokemon.detail', pokedex_number=cpn.pokedex_number) }}"
+                     class="badge bg-teal-light text-teal border-0 me-1 text-decoration-none">
+                    #{{ cpn.pokedex_number }}
+                    {% if cpn.pokemon %}{{ cpn.pokemon.name }}{% endif %}
+                  </a>
+                {% endfor %}
+              </td>
+            </tr>
+          {% endif %}
+
         </tbody>
       </table>
     </div>
@@ -121,4 +160,67 @@
   </div>
 </div>
 
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  // ----------------------------------------------------------------
+  // Render button active states based on current status
+  // ----------------------------------------------------------------
+  function renderButtons(status) {
+    document.querySelectorAll(".collection-btn").forEach(btn => {
+      const target = btn.dataset.targetStatus;
+      btn.classList.remove(
+        "btn-outline-secondary", "btn-warning", "btn-success",
+        "btn-secondary", "active"
+      );
+      if (target === status) {
+        // Active state
+        if (status === "WANTED") btn.classList.add("btn-warning");
+        else if (status === "OWNED") btn.classList.add("btn-success");
+        else btn.classList.add("btn-secondary");
+      } else {
+        // Inactive state
+        if (target === "WANTED") btn.classList.add("btn-outline-secondary");
+        else if (target === "OWNED") btn.classList.add("btn-outline-secondary");
+        else btn.classList.add("btn-outline-secondary");
+      }
+    });
+  }
+
+  // ----------------------------------------------------------------
+  // Send status update to the server
+  // ----------------------------------------------------------------
+  async function setCollectionStatus(btn) {
+    const toggle   = document.getElementById("collection-toggle");
+    const cardId   = toggle.dataset.cardId;
+    const newStatus = btn.dataset.targetStatus || null;
+    const feedback = document.getElementById("collection-feedback");
+
+    try {
+      const response = await fetch("{{ url_for('collection.toggle') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ card_id: cardId, status: newStatus })
+      });
+
+      if (!response.ok) throw new Error("Request failed");
+
+      const data = await response.json();
+      toggle.dataset.status = data.status || "";
+      renderButtons(data.status || "");
+      feedback.textContent = "";
+
+    } catch (err) {
+      feedback.textContent = "Something went wrong. Please try again.";
+    }
+  }
+
+  // ----------------------------------------------------------------
+  // Initialise button states on page load
+  // ----------------------------------------------------------------
+  const toggle = document.getElementById("collection-toggle");
+  renderButtons(toggle.dataset.status);
+</script>
 {% endblock %}

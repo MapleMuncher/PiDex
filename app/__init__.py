@@ -21,12 +21,14 @@ def create_app():
     from app.routes.collection import collection_bp
     from app.routes.binders import binders_bp
     from app.routes.sets import sets_bp
+    from app.routes.pokemon import pokemon_bp
 
     app.register_blueprint(home_bp)
     app.register_blueprint(cards_bp)
     app.register_blueprint(collection_bp)
     app.register_blueprint(binders_bp)
     app.register_blueprint(sets_bp)
+    app.register_blueprint(pokemon_bp)
 
     with app.app_context():
         from app import models  # noqa: F401

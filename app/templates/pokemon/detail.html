@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "macros.html" import card_thumbnail %}
+
+{% block title %}{{ pokemon.name }}{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+  <a href="{{ request.referrer or url_for('cards.index') }}"
+     class="text-muted small">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<div class="page-header">
+  <h1>#{{ pokemon.id }} {{ pokemon.name }}</h1>
+  <p>
+    {% if pokemon.type_1 %}
+      <span class="badge bg-secondary me-1">{{ pokemon.type_1 }}</span>
+    {% endif %}
+    {% if pokemon.type_2 %}
+      <span class="badge bg-secondary me-1">{{ pokemon.type_2 }}</span>
+    {% endif %}
+    {{ cards | length }} card{{ 's' if cards | length != 1 }}
+  </p>
+</div>
+
+{% if cards %}
+  <div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 row-cols-xl-10 g-2">
+    {% for card in cards %}
+      <div class="col">
+        {{ card_thumbnail(card, collection_map.get(card.id)) }}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-search fs-1 d-block mb-3"></i>
+    <p>No cards found for {{ pokemon.name }}.</p>
+  </div>
+{% endif %}
+
+{% endblock %}
