@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Welcome to PiDex!</h1>
+    <p class="lead">Your personal Pokémon card collection manager.</p>
+</div>
+
+<div class="container">
+    <ul class="list-group ms-auto gap-1">
+    
+        <li class="list-group-item s">
+        <a class="nav-link fs-4"
+            href="{{ url_for('cards.index') }}">
+            <i class="bi bi-grid me-3"></i>Cards
+        </a>
+        </li>
+    
+        <li class="list-group-item s">
+        <a class="nav-link fs-4"
+            href="{{ url_for('sets.index') }}">
+            <i class="bi bi-collection me-3"></i>Sets
+        </a>
+        </li>
+    
+        <li class="list-group-item s">
+        <a class="nav-link fs-4"
+            href="{{ url_for('collection.index') }}">
+            <i class="bi bi-star me-3"></i>Collection
+        </a>
+        </li>
+    
+        <li class="list-group-item s">
+        <a class="nav-link fs-4"
+            href="{{ url_for('binders.index') }}">
+            <i class="bi bi-book me-3"></i>Binders
+        </a>
+        </li>
+    
+    </ul>
+</div>
+{% endblock %}

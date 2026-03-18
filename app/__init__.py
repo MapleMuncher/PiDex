@@ -16,11 +16,13 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
+    from app.routes.home import home_bp
     from app.routes.cards import cards_bp
     from app.routes.collection import collection_bp
     from app.routes.binders import binders_bp
     from app.routes.sets import sets_bp
 
+    app.register_blueprint(home_bp)
     app.register_blueprint(cards_bp)
     app.register_blueprint(collection_bp)
     app.register_blueprint(binders_bp)

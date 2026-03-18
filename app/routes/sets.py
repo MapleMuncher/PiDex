@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template
 
-sets_bp = Blueprint("sets", __name__)
+sets_bp = Blueprint("sets", __name__, url_prefix="/sets")
 
 
-@sets_bp.route("/sets")
+@sets_bp.route("/")
 def index():
     return render_template("sets/index.html")
  

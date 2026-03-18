@@ -5,7 +5,7 @@ from app import db
 from app.models import Card, CardPokedexNumber, Collection, Pokemon, Set
 from app.sorting import DEFAULT_SORT, SORT_OPTIONS, apply_sort, needs_set_join
 
-cards_bp = Blueprint("cards", __name__)
+cards_bp = Blueprint("cards", __name__, url_prefix="/cards")
 
 CARDS_PER_PAGE = 60
 
