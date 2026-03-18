@@ -3,6 +3,7 @@ from sqlalchemy import distinct
 
 from app import db
 from app.models import Card, CardPokedexNumber, Collection, Pokemon, Set
+from app.sorting import DEFAULT_SORT, SORT_OPTIONS, apply_sort, needs_set_join
 
 cards_bp = Blueprint("cards", __name__)
 
@@ -10,11 +11,11 @@ CARDS_PER_PAGE = 60
 
 
 def _base_query(set_id=None, series=None, rarity=None, pokemon=None):
-    """Build a filtered Card query from the given parameters."""
+    """Build a filtered Card query. Sorting is applied separately via apply_sort()."""
     query = db.select(Card)
+    has_set_join = False
 
     if pokemon:
-        # Join through CardPokedexNumber to Pokemon and filter by name
         query = (
             query
             .join(CardPokedexNumber, Card.id == CardPokedexNumber.card_id)
@@ -26,30 +27,32 @@ def _base_query(set_id=None, series=None, rarity=None, pokemon=None):
         query = query.where(Card.set_code == set_id)
 
     if series:
-        query = (
-            query
-            .join(Set, Card.set_code == Set.id)
-            .where(Set.series_name == series)
-        )
+        query = query.join(Set, Card.set_code == Set.id)
+        query = query.where(Set.series_name == series)
+        has_set_join = True
 
     if rarity:
         query = query.where(Card.norm_rarity == rarity)
 
-    return query.order_by(Card.set_code, Card.set_number)
+    return query, has_set_join
 
 
 @cards_bp.route("/")
 def index():
-    """Browse all cards with optional filtering."""
+    """Browse all cards with optional filtering and sorting."""
     set_id  = request.args.get("set_id", "").strip() or None
     series  = request.args.get("series", "").strip() or None
     rarity  = request.args.get("rarity", "").strip() or None
     pokemon = request.args.get("pokemon", "").strip() or None
+    sort    = request.args.get("sort", DEFAULT_SORT)
+    if sort not in SORT_OPTIONS:
+        sort = DEFAULT_SORT
     page    = request.args.get("page", 1, type=int)
 
-    query      = _base_query(set_id=set_id, series=series, rarity=rarity, pokemon=pokemon)
-    pagination = db.paginate(query, page=page, per_page=CARDS_PER_PAGE, error_out=False)
-    cards      = pagination.items
+    query, has_set_join = _base_query(set_id=set_id, series=series, rarity=rarity, pokemon=pokemon)
+    query               = apply_sort(query, sort, has_set_join=has_set_join)
+    pagination          = db.paginate(query, page=page, per_page=CARDS_PER_PAGE, error_out=False)
+    cards               = pagination.items
 
     # Build collection map for badge display
     card_ids        = [c.id for c in cards]
@@ -59,10 +62,10 @@ def index():
     collection_map  = {c.card_id: c for c in collection_rows}
 
     # Filter options
-    all_sets    = db.session.execute(
+    all_sets     = db.session.execute(
         db.select(Set).order_by(Set.release_date)
     ).scalars().all()
-    all_series  = db.session.execute(
+    all_series   = db.session.execute(
         db.select(distinct(Set.series_name)).order_by(Set.series_name)
     ).scalars().all()
     all_rarities = db.session.execute(
@@ -79,11 +82,12 @@ def index():
         all_sets=all_sets,
         all_series=all_series,
         all_rarities=all_rarities,
-        # Pass current filter values back to the template
+        sort_options=[(k, v[0]) for k, v in SORT_OPTIONS.items()],
         current_set_id=set_id,
         current_series=series,
         current_rarity=rarity,
         current_pokemon=pokemon,
+        current_sort=sort,
     )
 
 
