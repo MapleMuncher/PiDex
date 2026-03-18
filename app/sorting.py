@@ -20,7 +20,7 @@ from app.models import Card, CardPokedexNumber, Pokemon, Set
 # key  → (display label, needs_set_join, needs_pokemon_join)
 # ---------------------------------------------------------------------------
 SORT_OPTIONS: dict[str, tuple[str, bool, bool]] = {
-    "set":          ("Set / number",        False, False),
+    "set":          ("Set / number",        True,  False),
     "name":         ("Name A–Z",            False, False),
     "rarity_asc":   ("Rarity (low–high)",   False, False),
     "rarity_desc":  ("Rarity (high–low)",   False, False),
@@ -31,7 +31,7 @@ SORT_OPTIONS: dict[str, tuple[str, bool, bool]] = {
     "category":     ("Category",            False, True),
 }
 
-DEFAULT_SORT = "set"
+DEFAULT_SORT = "release_desc"
 
 
 def sort_label(key: str) -> str:
@@ -68,13 +68,13 @@ def _primary_pokemon_subquery():
 # ---------------------------------------------------------------------------
 # apply_sort
 # ---------------------------------------------------------------------------
-def apply_sort(query, sort_key: str, has_set_join: bool = False):
+def apply_sort(query, sort_key: str, has_set_join: bool = False, has_pokemon_join: bool = False):
     """
     Apply ORDER BY clauses to a Card select query.
 
     If the sort requires a Set or Pokémon join that isn't already present,
-    this function adds it. Pass has_set_join=True if the caller has already
-    joined Set (e.g. for a series filter) to avoid a duplicate join.
+    this function adds it. Pass has_set_join=True or has_pokemon_join=True
+    if the caller has already joined those tables to avoid duplicate joins.
 
     Returns the modified query.
     """
@@ -84,22 +84,21 @@ def apply_sort(query, sort_key: str, has_set_join: bool = False):
     # Add Set join if needed and not already present
     if needs_set_join(sort_key) and not has_set_join:
         query = query.join(Set, Card.set_code == Set.id)
-        has_set_join = True
 
-    # Add Pokémon join via primary-Pokémon subquery if needed
-    pokemon_joined = False
-    if needs_pokemon_join(sort_key):
+    # Add Pokémon join via primary-Pokémon subquery if needed and not already present.
+    # If Pokémon is already joined (e.g. from a name filter), reuse that join directly
+    # rather than adding the subquery — ORDER BY will use the existing pokemon alias.
+    if needs_pokemon_join(sort_key) and not has_pokemon_join:
         sq = _primary_pokemon_subquery()
         query = (
             query
             .outerjoin(sq, Card.id == sq.c.card_id)
             .outerjoin(Pokemon, Pokemon.id == sq.c.primary_dex)
         )
-        pokemon_joined = True
 
     # Apply ORDER BY
     if sort_key == "set":
-        query = query.order_by(Card.set_code, Card.set_number)
+        query = query.order_by(Set.release_date, Card.set_code, Card.set_number)
     elif sort_key == "name":
         query = query.order_by(Card.name)
     elif sort_key == "rarity_asc":

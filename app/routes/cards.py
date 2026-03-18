@@ -13,7 +13,8 @@ CARDS_PER_PAGE = 60
 def _base_query(set_id=None, series=None, rarity=None, pokemon=None):
     """Build a filtered Card query. Sorting is applied separately via apply_sort()."""
     query = db.select(Card)
-    has_set_join = False
+    has_set_join     = False
+    has_pokemon_join = False
 
     if pokemon:
         query = (
@@ -22,6 +23,7 @@ def _base_query(set_id=None, series=None, rarity=None, pokemon=None):
             .join(Pokemon, CardPokedexNumber.pokedex_number == Pokemon.id)
             .where(Pokemon.name.ilike(f"%{pokemon}%"))
         )
+        has_pokemon_join = True
 
     if set_id:
         query = query.where(Card.set_code == set_id)
@@ -34,7 +36,7 @@ def _base_query(set_id=None, series=None, rarity=None, pokemon=None):
     if rarity:
         query = query.where(Card.norm_rarity == rarity)
 
-    return query, has_set_join
+    return query, has_set_join, has_pokemon_join
 
 
 @cards_bp.route("/")
@@ -49,8 +51,8 @@ def index():
         sort = DEFAULT_SORT
     page    = request.args.get("page", 1, type=int)
 
-    query, has_set_join = _base_query(set_id=set_id, series=series, rarity=rarity, pokemon=pokemon)
-    query               = apply_sort(query, sort, has_set_join=has_set_join)
+    query, has_set_join, has_pokemon_join = _base_query(set_id=set_id, series=series, rarity=rarity, pokemon=pokemon)
+    query               = apply_sort(query, sort, has_set_join=has_set_join, has_pokemon_join=has_pokemon_join)
     pagination          = db.paginate(query, page=page, per_page=CARDS_PER_PAGE, error_out=False)
     cards               = pagination.items
 
