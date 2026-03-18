@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}PiDex{% endblock %} — PiDex</title>
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/icon.svg') }}">
+
   <!-- Bootstrap 5 -->
   <link
     href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css"
@@ -81,19 +84,6 @@
       background-color: var(--navbar-bg);
       border-bottom: 1px solid rgba(0,0,0,0.1);
       padding: 0.5rem 0;
-    }
-
-    .navbar-brand {
-      font-family: 'Baloo 2', sans-serif;
-      font-weight: 700;
-      font-size: 1.4rem;
-      color: var(--navbar-text) !important;
-      letter-spacing: -0.3px;
-    }
-
-    .navbar-brand span {
-      opacity: 0.7;
-      font-weight: 600;
     }
 
     .navbar-nav .nav-link {
@@ -313,7 +303,10 @@
     <div class="container">
 
       <a class="navbar-brand" href="{{ url_for('cards.index') }}">
-        Pi<span>Dex</span>
+        <img
+          src="{{ url_for('static', filename='images/logo.svg') }}"
+          alt="PiDex"
+          height="36">
       </a>
 
       <button class="navbar-toggler" type="button"
