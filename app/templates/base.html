@@ -1,11 +1,400 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}PiDex{% endblock %}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}PiDex{% endblock %} — PiDex</title>
+
+  <!-- Bootstrap 5 -->
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css"
+    rel="stylesheet">
+
+  <!-- Bootstrap Icons -->
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+    rel="stylesheet">
+
+  <!-- Google Fonts — Nunito (body) + Baloo 2 (headings) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Nunito:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ------------------------------------------------------------------ */
+    /* CSS variables — edit here to retheme the entire app                 */
+    /* ------------------------------------------------------------------ */
+    :root {
+      --pidex-teal:        #1A9E96;
+      --pidex-teal-dark:   #117A74;
+      --pidex-teal-light:  #E6F7F6;
+      --pidex-black:       #1A1A1A;
+      --pidex-white:       #FFFFFF;
+      --pidex-grey:        #F5F5F5;
+      --pidex-border:      #DEE2E6;
+
+      /* Navbar — change --navbar-bg to #FFFFFF and --navbar-text to
+         var(--pidex-black) to switch to a white navbar in the future  */
+      --navbar-bg:         var(--pidex-teal-dark);
+      --navbar-text:       var(--pidex-white);
+      --navbar-hover:      var(--pidex-teal-light);
+      --navbar-active-bg:  var(--pidex-teal);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Base                                                                 */
+    /* ------------------------------------------------------------------ */
+    body {
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.95rem;
+      color: var(--pidex-black);
+      background-color: var(--pidex-grey);
+    }
+
+    h1, h2, h3, h4, h5, h6,
+    .font-display {
+      font-family: 'Baloo 2', sans-serif;
+    }
+
+    a {
+      color: var(--pidex-teal);
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: var(--pidex-teal-dark);
+      text-decoration: underline;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Navbar                                                               */
+    /* ------------------------------------------------------------------ */
+    .navbar {
+      background-color: var(--navbar-bg);
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      padding: 0.5rem 0;
+    }
+
+    .navbar-brand {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 1.4rem;
+      color: var(--navbar-text) !important;
+      letter-spacing: -0.3px;
+    }
+
+    .navbar-brand span {
+      opacity: 0.7;
+      font-weight: 600;
+    }
+
+    .navbar-nav .nav-link {
+      color: var(--navbar-text) !important;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      opacity: 0.85;
+      transition: opacity 0.15s, background-color 0.15s;
+    }
+
+    .navbar-nav .nav-link:hover {
+      opacity: 1;
+      background-color: rgba(255,255,255,0.15);
+    }
+
+    .navbar-nav .nav-link.active {
+      opacity: 1;
+      background-color: var(--navbar-active-bg);
+    }
+
+    .navbar-toggler {
+      border-color: rgba(255,255,255,0.4);
+    }
+
+    .navbar-toggler-icon {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255,255,255,0.85)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Layout                                                               */
+    /* ------------------------------------------------------------------ */
+    .page-content {
+      padding: 2rem 0 3rem;
+    }
+
+    .page-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .page-header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .page-header p {
+      color: #6c757d;
+      margin-bottom: 0;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Cards (Bootstrap card overrides)                                     */
+    /* ------------------------------------------------------------------ */
+    .card {
+      border-color: var(--pidex-border);
+      border-radius: 10px;
+    }
+
+    .card-header {
+      background-color: var(--pidex-white);
+      border-bottom-color: var(--pidex-border);
+      font-weight: 600;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Buttons                                                              */
+    /* ------------------------------------------------------------------ */
+    .btn-primary {
+      background-color: var(--pidex-teal);
+      border-color: var(--pidex-teal);
+    }
+
+    .btn-primary:hover,
+    .btn-primary:focus {
+      background-color: var(--pidex-teal-dark);
+      border-color: var(--pidex-teal-dark);
+    }
+
+    .btn-outline-primary {
+      color: var(--pidex-teal);
+      border-color: var(--pidex-teal);
+    }
+
+    .btn-outline-primary:hover {
+      background-color: var(--pidex-teal);
+      border-color: var(--pidex-teal);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Badges                                                               */
+    /* ------------------------------------------------------------------ */
+    .badge-wanted {
+      background-color: #FFC107;
+      color: #1A1A1A;
+      font-weight: 600;
+      font-size: 0.7rem;
+    }
+
+    .badge-owned {
+      background-color: var(--pidex-teal);
+      color: var(--pidex-white);
+      font-weight: 600;
+      font-size: 0.7rem;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Flash messages                                                       */
+    /* ------------------------------------------------------------------ */
+    .flash-container {
+      position: fixed;
+      top: 70px;
+      right: 1rem;
+      z-index: 1055;
+      min-width: 280px;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Footer                                                               */
+    /* ------------------------------------------------------------------ */
+    .site-footer {
+      background-color: var(--pidex-white);
+      border-top: 1px solid var(--pidex-border);
+      padding: 1rem 0;
+      font-size: 0.8rem;
+      color: #6c757d;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Card thumbnail                                                        */
+    /* ------------------------------------------------------------------ */
+    .card-thumb {
+      display: block;
+    }
+
+    .card-thumb-inner {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card-thumb:hover .card-thumb-inner {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    }
+
+    .card-thumb-img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .card-thumb-placeholder {
+      aspect-ratio: 2 / 3;
+      background-color: var(--pidex-grey);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      border-radius: 8px;
+    }
+
+    .card-thumb-badge {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.68rem;
+      letter-spacing: 0.3px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Pagination — teal accent                                             */
+    /* ------------------------------------------------------------------ */
+    .page-link {
+      color: var(--pidex-teal);
+      border-color: var(--pidex-border);
+      border-radius: 6px !important;
+      font-weight: 500;
+      min-width: 36px;
+      text-align: center;
+    }
+
+    .page-link:hover {
+      color: var(--pidex-teal-dark);
+      background-color: var(--pidex-teal-light);
+      border-color: var(--pidex-teal);
+    }
+
+    .page-item.active .page-link {
+      background-color: var(--pidex-teal);
+      border-color: var(--pidex-teal);
+      color: var(--pidex-white);
+    }
+
+    .page-item.disabled .page-link {
+      color: #adb5bd;
+      border-color: var(--pidex-border);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Utilities                                                            */
+    /* ------------------------------------------------------------------ */
+    .text-teal { color: var(--pidex-teal); }
+    .bg-teal-light { background-color: var(--pidex-teal-light); }
+  </style>
+
+  {% block extra_css %}{% endblock %}
 </head>
+
 <body>
-    {% block content %}{% endblock %}
+
+  <!-- ================================================================== -->
+  <!-- Navbar                                                               -->
+  <!-- ================================================================== -->
+  <nav class="navbar navbar-expand-md sticky-top">
+    <div class="container">
+
+      <a class="navbar-brand" href="{{ url_for('cards.index') }}">
+        Pi<span>Dex</span>
+      </a>
+
+      <button class="navbar-toggler" type="button"
+              data-bs-toggle="collapse" data-bs-target="#mainNav"
+              aria-controls="mainNav" aria-expanded="false"
+              aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="mainNav">
+        <ul class="navbar-nav ms-auto gap-1">
+
+          <li class="nav-item">
+            <a class="nav-link {% if request.blueprint == 'cards' %}active{% endif %}"
+               href="{{ url_for('cards.index') }}">
+              <i class="bi bi-grid me-1"></i>Cards
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link {% if request.blueprint == 'sets' %}active{% endif %}"
+               href="{{ url_for('sets.index') }}">
+              <i class="bi bi-collection me-1"></i>Sets
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link {% if request.blueprint == 'collection' %}active{% endif %}"
+               href="{{ url_for('collection.index') }}">
+              <i class="bi bi-star me-1"></i>Collection
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link {% if request.blueprint == 'binders' %}active{% endif %}"
+               href="{{ url_for('binders.index') }}">
+              <i class="bi bi-book me-1"></i>Binders
+            </a>
+          </li>
+
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================================================================== -->
+  <!-- Flash messages                                                       -->
+  <!-- ================================================================== -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show shadow-sm"
+               role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ================================================================== -->
+  <!-- Page content                                                         -->
+  <!-- ================================================================== -->
+  <main class="page-content">
+    <div class="container">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- ================================================================== -->
+  <!-- Footer                                                               -->
+  <!-- ================================================================== -->
+  <footer class="site-footer">
+    <div class="container d-flex justify-content-between align-items-center">
+      <span>PiDex</span>
+      <span>Pokémon TCG Collection Manager</span>
+    </div>
+  </footer>
+
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+
+  {% block extra_js %}{% endblock %}
+
 </body>
 </html>

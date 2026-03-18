@@ -1,0 +1,118 @@
+{# ======================================================================
+   macros.html — reusable components
+   Usage: {% from 'macros.html' import card_thumbnail, pagination %}
+   ====================================================================== #}
+
+
+{# ----------------------------------------------------------------------
+   card_thumbnail(card, collection_entry=None)
+
+   Renders a clickable card thumbnail showing the card image and, if the
+   card is in the user's collection, a WANTED or OWNED status badge.
+
+   Args:
+     card             — a Card model instance
+     collection_entry — a Collection model instance or None
+   ---------------------------------------------------------------------- #}
+{% macro card_thumbnail(card, collection_entry=None) %}
+<a href="{{ url_for('cards.detail', card_id=card.id) }}"
+   class="card-thumb text-decoration-none"
+   title="{{ card.name }}">
+
+  <div class="card-thumb-inner">
+
+    {# Card image #}
+    {% if card.image_url %}
+      <img
+        src="{{ url_for('static', filename='images/cards/' ~ card.set_code ~ '/' ~ card.set_number ~ '.png') }}"
+        onerror="this.src='{{ card.image_url }}'"
+        alt="{{ card.name }}"
+        class="card-thumb-img"
+        loading="lazy">
+    {% else %}
+      <div class="card-thumb-placeholder">
+        <i class="bi bi-image text-muted"></i>
+      </div>
+    {% endif %}
+
+    {# Collection status badge #}
+    {% if collection_entry %}
+      {% if collection_entry.status == 'OWNED' %}
+        <span class="card-thumb-badge badge badge-owned">
+          <i class="bi bi-check-lg me-1"></i>Owned
+        </span>
+      {% elif collection_entry.status == 'WANTED' %}
+        <span class="card-thumb-badge badge badge-wanted">
+          <i class="bi bi-star-fill me-1"></i>Wanted
+        </span>
+      {% endif %}
+    {% endif %}
+
+  </div>
+
+</a>
+{% endmacro %}
+
+
+{# ----------------------------------------------------------------------
+   pagination(pagination_obj, endpoint, **kwargs)
+
+   Renders a numbered pagination control with previous and next buttons.
+
+   Args:
+     pagination_obj — a Flask-SQLAlchemy Pagination object
+     endpoint       — the route name to link to, e.g. 'cards.index'
+     **kwargs       — any extra query parameters to include in page links
+                      (e.g. set_id=..., rarity=...)
+   ---------------------------------------------------------------------- #}
+{% macro pagination(pagination_obj, endpoint, **kwargs) %}
+{% if pagination_obj.pages > 1 %}
+<nav aria-label="Page navigation" class="mt-4">
+  <ul class="pagination justify-content-center flex-wrap gap-1">
+
+    {# Previous #}
+    <li class="page-item {% if not pagination_obj.has_prev %}disabled{% endif %}">
+      <a class="page-link"
+         href="{{ url_for(endpoint, page=pagination_obj.prev_num, **kwargs) if pagination_obj.has_prev else '#' }}"
+         aria-label="Previous">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+    </li>
+
+    {# Page numbers with ellipsis #}
+    {% for page_num in pagination_obj.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if page_num %}
+        <li class="page-item {% if page_num == pagination_obj.page %}active{% endif %}">
+          <a class="page-link"
+             href="{{ url_for(endpoint, page=page_num, **kwargs) }}">
+            {{ page_num }}
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">…</span>
+        </li>
+      {% endif %}
+    {% endfor %}
+
+    {# Next #}
+    <li class="page-item {% if not pagination_obj.has_next %}disabled{% endif %}">
+      <a class="page-link"
+         href="{{ url_for(endpoint, page=pagination_obj.next_num, **kwargs) if pagination_obj.has_next else '#' }}"
+         aria-label="Next">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </li>
+
+  </ul>
+
+  <p class="text-center text-muted small mt-1">
+    Page {{ pagination_obj.page }} of {{ pagination_obj.pages }}
+    &mdash; {{ pagination_obj.total }} cards
+  </p>
+</nav>
+{% endif %}
+{% endmacro %}
+
+
+{# Card thumbnail and pagination CSS lives in base.html #}
