@@ -244,6 +244,29 @@
       border-radius: 8px;
     }
 
+    /* Status border trim */
+    .card-thumb--owned {
+      box-shadow: 0 0 0 3px var(--pidex-teal);
+    }
+
+    .card-thumb--wanted {
+      box-shadow: 0 0 0 3px #FFC107;
+    }
+
+    /* Grey overlay for cards not owned */
+    .card-thumb-overlay {
+      position: absolute;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.35);
+      border-radius: 8px;
+      pointer-events: none;
+    }
+
+    /* Reduce overlay on hover so you can still see the card */
+    .card-thumb:hover .card-thumb-overlay {
+      background-color: rgba(0, 0, 0, 0.15);
+    }
+
     .card-thumb-badge {
       position: absolute;
       bottom: 6px;

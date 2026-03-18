@@ -15,11 +15,12 @@
      collection_entry — a Collection model instance or None
    ---------------------------------------------------------------------- #}
 {% macro card_thumbnail(card, collection_entry=None) %}
+{% set status = collection_entry.status if collection_entry else '' %}
 <a href="{{ url_for('cards.detail', card_id=card.id) }}"
    class="card-thumb text-decoration-none"
    title="{{ card.name }}">
 
-  <div class="card-thumb-inner">
+  <div class="card-thumb-inner card-thumb--{{ status | lower if status else 'none' }}">
 
     {# Card image #}
     {% if card.image_url %}
@@ -35,17 +36,20 @@
       </div>
     {% endif %}
 
+    {# Grey overlay for cards not owned #}
+    {% if status != 'OWNED' %}
+      <div class="card-thumb-overlay"></div>
+    {% endif %}
+
     {# Collection status badge #}
-    {% if collection_entry %}
-      {% if collection_entry.status == 'OWNED' %}
-        <span class="card-thumb-badge badge badge-owned">
-          <i class="bi bi-check-lg me-1"></i>Owned
-        </span>
-      {% elif collection_entry.status == 'WANTED' %}
-        <span class="card-thumb-badge badge badge-wanted">
-          <i class="bi bi-star-fill me-1"></i>Wanted
-        </span>
-      {% endif %}
+    {% if status == 'OWNED' %}
+      <span class="card-thumb-badge badge badge-owned">
+        <i class="bi bi-check-lg me-1"></i>Owned
+      </span>
+    {% elif status == 'WANTED' %}
+      <span class="card-thumb-badge badge badge-wanted">
+        <i class="bi bi-star-fill me-1"></i>Wanted
+      </span>
     {% endif %}
 
   </div>
