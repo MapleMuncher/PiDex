@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -27,5 +28,14 @@ def create_app():
 
     with app.app_context():
         from app import models  # noqa: F401
+
+    # Serve images locally in development — on the Pi this is handled by Nginx
+    if app.debug:
+        from flask import send_from_directory
+        images_dir = os.path.join(app.root_path, '..', 'images')
+
+        @app.route('/images/<path:filename>')
+        def serve_images(filename):
+            return send_from_directory(images_dir, filename)
 
     return app

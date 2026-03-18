@@ -32,3 +32,8 @@ Run from WSL:
 pidex
 rsync -av --progress images/ maplemuncher@[tailscale-ip]:/var/pidex/images/
 ```
+
+# Development
+```bash
+flask run
+```
