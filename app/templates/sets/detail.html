@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% from "macros.html" import card_thumbnail %}
+
+{% block title %}{{ set.name }}{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+  <a href="{{ request.referrer or url_for('sets.index') }}"
+     class="text-muted small">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<div class="page-header">
+  <h1>{{ set.name }}</h1>
+  <p>
+    {% if set.series_name %}
+      <span class="badge bg-secondary me-1">{{ set.series_name }}</span>
+    {% endif %}
+    {% if set.release_date %}
+      <span class="text-muted me-2">{{ set.release_date.strftime('%B %Y') }}</span>
+    {% endif %}
+    {{ cards | length }} card{{ 's' if cards | length != 1 }}
+  </p>
+</div>
+
+{# ------------------------------------------------------------------ #}
+{# Filter bar                                                           #}
+{# ------------------------------------------------------------------ #}
+{% set filter_action    = url_for('sets.detail', set_id=set.id) %}
+{% set filter_reset_url = url_for('sets.detail', set_id=set.id) %}
+{% set show_pokemon     = true %}
+{% set show_evo_line    = true %}
+{% set show_series      = false %}
+{% set show_set         = false %}
+{% include '_filter_bar.html' %}
+
+{# ------------------------------------------------------------------ #}
+{# Card grid                                                            #}
+{# ------------------------------------------------------------------ #}
+{% if cards %}
+  <div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 row-cols-xl-10 g-2">
+    {% for card in cards %}
+      <div class="col">
+        {{ card_thumbnail(card, status_map.get(card.id)) }}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-search fs-1 d-block mb-3"></i>
+    <p>No cards found in {{ set.name }} matching your filters.</p>
+    <a href="{{ url_for('sets.detail', set_id=set.id) }}"
+       class="btn btn-outline-secondary btn-sm mt-2">
+      Clear filters
+    </a>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ----------------------------------------------------------------
+// Pokémon autocomplete
+// ----------------------------------------------------------------
+(function () {
+  const input    = document.getElementById('pokemon-input');
+  const dropdown = document.getElementById('pokemon-suggestions');
+  let debounce;
+
+  input.addEventListener('input', function () {
+    clearTimeout(debounce);
+    const q = this.value.trim();
+    if (!q) { hide(); return; }
+    debounce = setTimeout(() => suggest(q), 200);
+  });
+
+  async function suggest(q) {
+    try {
+      const resp = await fetch(`{{ url_for('pokemon.search') }}?q=${encodeURIComponent(q)}`);
+      const data = await resp.json();
+      if (!data.length) { hide(); return; }
+
+      dropdown.innerHTML = data.map(p =>
+        `<li class="autocomplete-item" data-name="${p.name}">
+           <span class="autocomplete-dex">#${String(p.id).padStart(3, '0')}</span>
+           ${p.name}
+         </li>`
+      ).join('');
+      dropdown.classList.remove('d-none');
+
+      dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+        item.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          input.value = this.dataset.name;
+          hide();
+          input.form.submit();
+        });
+      });
+    } catch (e) { hide(); }
+  }
+
+  function hide() {
+    dropdown.classList.add('d-none');
+    dropdown.innerHTML = '';
+  }
+
+  document.addEventListener('click', e => {
+    if (!input.contains(e.target) && !dropdown.contains(e.target)) hide();
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') hide();
+  });
+})();
+</script>
+{% endblock %}

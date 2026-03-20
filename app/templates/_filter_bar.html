@@ -38,6 +38,7 @@
         {# Row 1: Series, Set, Rarity #}
         <div class="row g-2 mb-2">
 
+          {% if show_series is not defined or show_series %}
           <div class="col-12 col-sm-6 col-lg-4">
             <label class="form-label small fw-semibold mb-1">Series</label>
             <select name="series" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -49,7 +50,9 @@
               {% endfor %}
             </select>
           </div>
+          {% endif %}
 
+          {% if show_set is not defined or show_set %}
           <div class="col-12 col-sm-6 col-lg-4">
             <label class="form-label small fw-semibold mb-1">Set</label>
             {% set current_set_obj = all_sets | selectattr('id', 'equalto', current_set_id) | first if current_set_id else None %}
@@ -86,6 +89,7 @@
               </div>
             </div>
           </div>
+          {% endif %}
 
           <div class="col-12 col-sm-6 col-lg-4">
             <label class="form-label small fw-semibold mb-1">Rarity</label>
