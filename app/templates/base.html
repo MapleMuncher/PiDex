@@ -244,12 +244,12 @@
       border-radius: 8px;
     }
 
-    /* Status border trim */
-    .card-thumb--owned {
-      box-shadow: 0 0 0 3px var(--pidex-teal);
+    /* Status border trim — driven by data attributes */
+    .card-thumb-inner[data-owned="true"] {
+      box-shadow: 0 0 0 0px var(--pidex-teal);
     }
 
-    .card-thumb--wanted {
+    .card-thumb-inner[data-wanted="true"]:not([data-owned="true"]) {
       box-shadow: 0 0 0 0px #FFC107;
     }
 
@@ -260,6 +260,12 @@
       background-color: rgba(0, 0, 0, 0.35);
       border-radius: 8px;
       pointer-events: none;
+      transition: background-color 0.15s ease;
+    }
+
+    /* Hide overlay when owned */
+    .card-thumb-inner[data-owned="true"] .card-thumb-overlay {
+      display: none;
     }
 
     /* Reduce overlay on hover so you can still see the card */
@@ -267,15 +273,64 @@
       background-color: rgba(0, 0, 0, 0.15);
     }
 
-    .card-thumb-badge {
+    /* Toggle badge buttons */
+    .card-thumb-badges {
       position: absolute;
-      bottom: 6px;
-      left: 6px;
+      bottom: 5px;
+      left: 5px;
+      right: 5px;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+
+    .card-thumb-badge {
+      pointer-events: all;
+      border: none;
       border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 0.68rem;
-      letter-spacing: 0.3px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      padding: 2px 5px;
+      font-size: 0.65rem;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      line-height: 1.2;
+      background: rgba(0, 0, 0, 0.45);
+      color: rgba(255, 255, 255, 0.6);
+      transition: background 0.15s, color 0.15s, transform 0.1s;
+    }
+
+    .card-thumb-badge:hover {
+      transform: scale(1.08);
+    }
+
+    .badge-owned.is-active {
+      background: var(--pidex-teal);
+      color: #fff;
+    }
+
+    .badge-wanted.is-active {
+      background: #FFC107;
+      color: #212529;
+    }
+
+    /* On mobile: stack buttons vertically on the left */
+    @media (max-width: 576px) {
+      .card-thumb-badges {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 3px;
+        right: auto;
+      }
+
+      .card-thumb-badge {
+        padding: 4px 7px;
+        font-size: 1rem;
+        gap: 3px;
+      }
     }
 
     /* ------------------------------------------------------------------ */
@@ -413,6 +468,35 @@
 
   <!-- Bootstrap 5 JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    async function toggleCardStatus(event, field) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const inner  = event.currentTarget.closest('.card-thumb-inner');
+      const cardId = inner.dataset.cardId;
+      const newOwned  = field === 'owned'  ? inner.dataset.owned  !== 'true' : inner.dataset.owned  === 'true';
+      const newWanted = field === 'wanted' ? inner.dataset.wanted !== 'true' : inner.dataset.wanted === 'true';
+
+      try {
+        const resp = await fetch('/collection/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ card_id: cardId, owned: newOwned, wanted: newWanted })
+        });
+        if (!resp.ok) throw new Error();
+        const data = await resp.json();
+
+        inner.dataset.owned  = data.owned;
+        inner.dataset.wanted = data.wanted;
+        inner.querySelector('.card-thumb-badges .badge-owned').classList.toggle('is-active', data.owned);
+        inner.querySelector('.card-thumb-badges .badge-wanted').classList.toggle('is-active', data.wanted);
+      } catch(e) {
+        // silent fail on thumbnail
+      }
+    }
+  </script>
 
   {% block extra_js %}{% endblock %}
 

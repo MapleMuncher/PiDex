@@ -7,22 +7,26 @@
 {# ----------------------------------------------------------------------
    card_thumbnail(card, card_status=None)
 
-   Renders a clickable card thumbnail showing the card image and, if the
-   card is in the user's collection, an Owned and/or Wanted status badge.
+   Renders a clickable card thumbnail with two toggle buttons (Owned /
+   Wanted). Both buttons are always visible; active state is styled via
+   the is-active class. Clicking a button toggles that flag without
+   navigating away. Clicking the card image navigates to the detail page.
 
    Args:
      card        — a Card model instance
      card_status — a CardStatus model instance or None
    ---------------------------------------------------------------------- #}
 {% macro card_thumbnail(card, card_status=None) %}
-{% set is_owned = card_status.owned if card_status else false %}
+{% set is_owned  = card_status.owned  if card_status else false %}
 {% set is_wanted = card_status.wanted if card_status else false %}
-{% set thumb_class = 'owned' if is_owned else ('wanted' if is_wanted else 'none') %}
 <a href="{{ url_for('cards.detail', card_id=card.id) }}"
    class="card-thumb text-decoration-none"
    title="{{ card.name }}">
 
-  <div class="card-thumb-inner card-thumb--{{ thumb_class }}">
+  <div class="card-thumb-inner"
+       data-card-id="{{ card.id }}"
+       data-owned="{{ 'true' if is_owned else 'false' }}"
+       data-wanted="{{ 'true' if is_wanted else 'false' }}">
 
     {# Card image — use WebP thumbnail for speed, fall back to PNG, then remote URL #}
     {% if card.image_url %}
@@ -39,20 +43,22 @@
     {% endif %}
 
     {# Grey overlay for cards not owned #}
-    {% if not is_owned %}
-      <div class="card-thumb-overlay"></div>
-    {% endif %}
+    <div class="card-thumb-overlay"></div>
 
-    {# Status badges #}
-    {% if is_owned %}
-      <span class="card-thumb-badge badge badge-owned">
-        <i class="bi bi-check-lg me-1"></i>Owned
-      </span>
-    {% elif is_wanted %}
-      <span class="card-thumb-badge badge badge-wanted">
-        <i class="bi bi-star-fill me-1"></i>Wanted
-      </span>
-    {% endif %}
+    {# Toggle buttons — always shown, active state driven by is-active class #}
+    <div class="card-thumb-badges">
+      <button class="card-thumb-badge badge-owned {{ 'is-active' if is_owned }}"
+              onclick="toggleCardStatus(event, 'owned')"
+              title="Toggle owned">
+        <i class="bi bi-check-lg"></i>Owned
+      </button>
+
+      <button class="card-thumb-badge badge-wanted {{ 'is-active' if is_wanted }}"
+              onclick="toggleCardStatus(event, 'wanted')"
+              title="Toggle wanted">
+        <i class="bi bi-star-fill"></i>Wanted
+      </button>
+    </div>
 
   </div>
 
