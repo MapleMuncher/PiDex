@@ -23,9 +23,9 @@
         <label class="form-label small fw-semibold mb-1">Series</label>
         <select name="series" class="form-select form-select-sm" onchange="this.form.submit()">
           <option value="">All series</option>
-          {% for s in all_series %}
-            <option value="{{ s }}" {% if s == current_series %}selected{% endif %}>
-              {{ s }}
+          {% for series_name, year in all_series %}
+            <option value="{{ series_name }}" {% if series_name == current_series %}selected{% endif %}>
+              {{ series_name }}{% if year %} ({{ year }}){% endif %}
             </option>
           {% endfor %}
         </select>
@@ -33,14 +33,39 @@
 
       <div class="col-12 col-sm-6 col-lg-3">
         <label class="form-label small fw-semibold mb-1">Set</label>
-        <select name="set_id" class="form-select form-select-sm" onchange="this.form.submit()">
-          <option value="">All sets</option>
-          {% for s in all_sets %}
-            <option value="{{ s.id }}" {% if s.id == current_set_id %}selected{% endif %}>
-              {{ s.name }}
-            </option>
-          {% endfor %}
-        </select>
+        {% set current_set_obj = all_sets | selectattr('id', 'equalto', current_set_id) | first if current_set_id else None %}
+        <input type="hidden" name="set_id" id="set-id-input" value="{{ current_set_id or '' }}">
+        <div class="set-dropdown" id="set-dropdown">
+          <div class="form-select form-select-sm set-dropdown-trigger" id="set-dropdown-trigger" tabindex="0">
+            {% if current_set_obj %}
+              <span>{{ current_set_obj.name }}</span>
+              <span class="text-muted ms-1 small">{{ current_set_obj.release_date.strftime('%b %Y') if current_set_obj.release_date }}</span>
+            {% else %}
+              <span class="text-muted">All sets</span>
+            {% endif %}
+          </div>
+          <div class="set-dropdown-panel d-none" id="set-dropdown-panel">
+            <div class="p-2 border-bottom">
+              <input type="text" class="form-control form-control-sm" id="set-search"
+                     placeholder="Search sets…" autocomplete="off">
+            </div>
+            <ul class="set-dropdown-list list-unstyled mb-0" id="set-list">
+              <li class="set-dropdown-item" data-value="" data-label="All sets">
+                <span class="text-muted">All sets</span>
+              </li>
+              {% for s in all_sets %}
+                <li class="set-dropdown-item {% if s.id == current_set_id %}active{% endif %}"
+                    data-value="{{ s.id }}"
+                    data-label="{{ s.name }}">
+                  <span>{{ s.name }}</span>
+                  {% if s.release_date %}
+                    <span class="text-muted small ms-auto">{{ s.release_date.strftime('%b %Y') }}</span>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
       </div>
 
       <div class="col-12 col-sm-6 col-lg-2">
@@ -166,6 +191,56 @@
 
 {% block extra_js %}
 <script>
+// ----------------------------------------------------------------
+// Set dropdown with search
+// ----------------------------------------------------------------
+(function () {
+  const trigger  = document.getElementById('set-dropdown-trigger');
+  const panel    = document.getElementById('set-dropdown-panel');
+  const search   = document.getElementById('set-search');
+  const list     = document.getElementById('set-list');
+  const hidden   = document.getElementById('set-id-input');
+
+  trigger.addEventListener('click', () => {
+    panel.classList.toggle('d-none');
+    if (!panel.classList.contains('d-none')) {
+      search.value = '';
+      filterList('');
+      search.focus();
+    }
+  });
+
+  trigger.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trigger.click(); }
+  });
+
+  search.addEventListener('input', () => filterList(search.value.trim().toLowerCase()));
+
+  function filterList(q) {
+    list.querySelectorAll('.set-dropdown-item').forEach(item => {
+      const label = item.dataset.label.toLowerCase();
+      item.style.display = (!q || label.includes(q)) ? '' : 'none';
+    });
+  }
+
+  list.addEventListener('click', e => {
+    const item = e.target.closest('.set-dropdown-item');
+    if (!item) return;
+    hidden.value = item.dataset.value;
+    panel.classList.add('d-none');
+    hidden.form.submit();
+  });
+
+  document.addEventListener('click', e => {
+    if (!document.getElementById('set-dropdown').contains(e.target)) {
+      panel.classList.add('d-none');
+    }
+  });
+})();
+
+// ----------------------------------------------------------------
+// Pokémon autocomplete
+// ----------------------------------------------------------------
 (function () {
   const input    = document.getElementById('pokemon-input');
   const dropdown = document.getElementById('pokemon-suggestions');

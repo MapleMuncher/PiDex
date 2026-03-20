@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request
-from sqlalchemy import distinct
+from sqlalchemy import distinct, func
 
 from app import db
 from app.models import Card, CardPokedexNumber, CardStatus, Pokemon, Set
@@ -93,12 +93,25 @@ def index():
     status_map  = {s.card_id: s for s in status_rows}
 
     # Filter options
-    all_sets     = db.session.execute(
-        db.select(Set).order_by(Set.release_date)
-    ).scalars().all()
-    all_series   = db.session.execute(
-        db.select(distinct(Set.series_name)).order_by(Set.series_name)
-    ).scalars().all()
+    sets_query = (
+        db.select(Set)
+        .where(Set.id.in_(db.select(Card.set_code).distinct()))
+        .order_by(Set.release_date.desc())
+    )
+    if series:
+        sets_query = sets_query.where(Set.series_name == series)
+    all_sets = db.session.execute(sets_query).scalars().all()
+
+    series_rows = db.session.execute(
+        db.select(Set.series_name, func.min(Set.release_date).label("first_release"))
+        .group_by(Set.series_name)
+        .order_by(func.min(Set.release_date).desc())
+    ).all()
+    all_series = [
+        (row.series_name, row.first_release.year if row.first_release else None)
+        for row in series_rows
+    ]
+
     all_rarities = db.session.execute(
         db.select(distinct(Card.norm_rarity))
         .where(Card.norm_rarity.is_not(None))

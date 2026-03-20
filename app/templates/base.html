@@ -334,6 +334,59 @@
     }
 
     /* ------------------------------------------------------------------ */
+    /* Set searchable dropdown                                               */
+    /* ------------------------------------------------------------------ */
+    .set-dropdown {
+      position: relative;
+    }
+
+    .set-dropdown-trigger {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
+    }
+
+    .set-dropdown-trigger .ms-auto {
+      margin-left: auto !important;
+    }
+
+    .set-dropdown-panel {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 100%;
+      width: max-content;
+      max-width: 320px;
+      background: var(--pidex-white);
+      border: 1px solid var(--pidex-border);
+      border-radius: 6px;
+      z-index: 1050;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-top: 2px;
+    }
+
+    .set-dropdown-list {
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .set-dropdown-item {
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .set-dropdown-item:hover,
+    .set-dropdown-item.active {
+      background-color: var(--pidex-teal-light);
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Autocomplete dropdown                                                 */
     /* ------------------------------------------------------------------ */
     .autocomplete-dropdown {
