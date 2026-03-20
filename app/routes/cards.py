@@ -10,7 +10,7 @@ cards_bp = Blueprint("cards", __name__, url_prefix="/cards")
 CARDS_PER_PAGE = 30
 
 
-def _base_query(set_id=None, series=None, rarity=None, pokemon=None):
+def _base_query(set_id=None, series=None, rarity=None, pokemon=None, owned=False, wanted=False, status_match="any"):
     """Build a filtered Card query. Sorting is applied separately via apply_sort()."""
     query = db.select(Card)
     has_set_join     = False
@@ -36,6 +36,30 @@ def _base_query(set_id=None, series=None, rarity=None, pokemon=None):
     if rarity:
         query = query.where(Card.norm_rarity == rarity)
 
+    if owned and wanted:
+        condition = (
+            db.and_(CardStatus.owned == True, CardStatus.wanted == True)
+            if status_match == "all"
+            else db.or_(CardStatus.owned == True, CardStatus.wanted == True)
+        )
+        query = (
+            query
+            .join(CardStatus, Card.id == CardStatus.card_id)
+            .where(condition)
+        )
+    elif owned:
+        query = (
+            query
+            .join(CardStatus, Card.id == CardStatus.card_id)
+            .where(CardStatus.owned == True)
+        )
+    elif wanted:
+        query = (
+            query
+            .join(CardStatus, Card.id == CardStatus.card_id)
+            .where(CardStatus.wanted == True)
+        )
+
     return query, has_set_join, has_pokemon_join
 
 
@@ -46,12 +70,17 @@ def index():
     series  = request.args.get("series", "").strip() or None
     rarity  = request.args.get("rarity", "").strip() or None
     pokemon = request.args.get("pokemon", "").strip() or None
+    owned        = "owned" in request.args
+    wanted       = "wanted" in request.args
+    status_match = request.args.get("status_match", "any")
+    if status_match not in ("any", "all"):
+        status_match = "any"
     sort    = request.args.get("sort", DEFAULT_SORT)
     if sort not in SORT_OPTIONS:
         sort = DEFAULT_SORT
     page    = request.args.get("page", 1, type=int)
 
-    query, has_set_join, has_pokemon_join = _base_query(set_id=set_id, series=series, rarity=rarity, pokemon=pokemon)
+    query, has_set_join, has_pokemon_join = _base_query(set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, owned=owned, wanted=wanted, status_match=status_match)
     query               = apply_sort(query, sort, has_set_join=has_set_join, has_pokemon_join=has_pokemon_join)
     pagination          = db.paginate(query, page=page, per_page=CARDS_PER_PAGE, error_out=False)
     cards               = pagination.items
@@ -89,6 +118,9 @@ def index():
         current_series=series,
         current_rarity=rarity,
         current_pokemon=pokemon,
+        current_owned=owned,
+        current_wanted=wanted,
+        current_status_match=status_match,
         current_sort=sort,
     )
 

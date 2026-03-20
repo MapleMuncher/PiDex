@@ -66,6 +66,40 @@
       </div>
 
       <div class="col-12 col-sm-6 col-lg-2">
+        <label class="form-label small fw-semibold mb-1">Status</label>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <div class="form-check form-check-inline m-0">
+            <input class="btn-check" type="checkbox" name="owned" id="filter-owned" autocomplete="off"
+                   {% if current_owned %}checked{% endif %}
+                   onchange="this.form.submit()">
+            <label class="btn btn-sm btn-outline-success" for="filter-owned">
+              <i class="bi bi-check-lg me-1"></i>Owned
+            </label>
+          </div>
+          <div class="form-check form-check-inline m-0">
+            <input class="btn-check" type="checkbox" name="wanted" id="filter-wanted" autocomplete="off"
+                   {% if current_wanted %}checked{% endif %}
+                   onchange="this.form.submit()">
+            <label class="btn btn-sm btn-outline-warning" for="filter-wanted">
+              <i class="bi bi-star-fill me-1"></i>Wanted
+            </label>
+          </div>
+          {% if current_owned and current_wanted %}
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="submit" name="status_match" value="any"
+                    class="btn {{ 'btn-secondary' if current_status_match == 'any' else 'btn-outline-secondary' }}">
+              Any
+            </button>
+            <button type="submit" name="status_match" value="all"
+                    class="btn {{ 'btn-secondary' if current_status_match == 'all' else 'btn-outline-secondary' }}">
+              All
+            </button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-lg-2">
         <label class="form-label small fw-semibold mb-1">Sort by</label>
         <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
           {% for key, label in sort_options %}
@@ -80,7 +114,7 @@
         <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
           <i class="bi bi-funnel me-1"></i>Filter
         </button>
-        {% if current_set_id or current_series or current_rarity or current_pokemon %}
+        {% if current_set_id or current_series or current_rarity or current_pokemon or current_owned or current_wanted %}
           <a href="{{ url_for('cards.index') }}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-x-lg"></i>
           </a>
@@ -108,7 +142,10 @@
       series=current_series or '',
       rarity=current_rarity or '',
       pokemon=current_pokemon or '',
-      sort=current_sort) }}
+      sort=current_sort,
+      owned='1' if current_owned else None,
+      wanted='1' if current_wanted else None,
+      status_match=current_status_match if (current_owned and current_wanted) else None) }}
 
 {% else %}
   <div class="text-center py-5 text-muted">

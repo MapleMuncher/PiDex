@@ -77,7 +77,7 @@
      **kwargs       — any extra query parameters to include in page links
                       (e.g. set_id=..., rarity=...)
    ---------------------------------------------------------------------- #}
-{% macro pagination(pagination_obj, endpoint, set_id='', series='', rarity='', pokemon='', sort='set') %}
+{% macro pagination(pagination_obj, endpoint, set_id='', series='', rarity='', pokemon='', sort='set', owned=None, wanted=None, status_match=None) %}
 {% if pagination_obj.pages > 1 %}
 <nav aria-label="Page navigation" class="mt-4">
   <ul class="pagination justify-content-center flex-wrap gap-1">
@@ -85,7 +85,7 @@
     {# Previous #}
     <li class="page-item {% if not pagination_obj.has_prev %}disabled{% endif %}">
       <a class="page-link"
-         href="{{ url_for(endpoint, page=pagination_obj.prev_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, sort=sort) if pagination_obj.has_prev else '#' }}"
+         href="{{ url_for(endpoint, page=pagination_obj.prev_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, sort=sort, owned=owned, wanted=wanted, status_match=status_match) if pagination_obj.has_prev else '#' }}"
          aria-label="Previous">
         <i class="bi bi-chevron-left"></i>
       </a>
@@ -96,7 +96,7 @@
       {% if page_num %}
         <li class="page-item {% if page_num == pagination_obj.page %}active{% endif %}">
           <a class="page-link"
-             href="{{ url_for(endpoint, page=page_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, sort=sort) }}">
+             href="{{ url_for(endpoint, page=page_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, sort=sort, owned=owned, wanted=wanted, status_match=status_match) }}">
             {{ page_num }}
           </a>
         </li>
@@ -110,7 +110,7 @@
     {# Next #}
     <li class="page-item {% if not pagination_obj.has_next %}disabled{% endif %}">
       <a class="page-link"
-         href="{{ url_for(endpoint, page=pagination_obj.next_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, sort=sort) if pagination_obj.has_next else '#' }}"
+         href="{{ url_for(endpoint, page=pagination_obj.next_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, sort=sort, owned=owned, wanted=wanted, status_match=status_match) if pagination_obj.has_next else '#' }}"
          aria-label="Next">
         <i class="bi bi-chevron-right"></i>
       </a>
