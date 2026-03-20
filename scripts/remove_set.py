@@ -10,8 +10,8 @@ import argparse
 
 from app import create_app, db
 from app.models import (
-    Card, CardEnergyType, CardPokedexNumber, CardSubType,
-    Collection, Set, Slot,
+    Card, CardEnergyType, CardPokedexNumber, CardStatus, CardSubType,
+    CollectionCard, Set, Slot,
 )
 
 
@@ -39,13 +39,13 @@ def remove_set(set_id: str, skip_confirm: bool = False) -> None:
             sub_count  = CardSubType.query.filter(CardSubType.card_id.in_(card_ids)).count()
             ene_count  = CardEnergyType.query.filter(CardEnergyType.card_id.in_(card_ids)).count()
             dex_count  = CardPokedexNumber.query.filter(CardPokedexNumber.card_id.in_(card_ids)).count()
-            col_count  = Collection.query.filter(Collection.card_id.in_(card_ids)).count()
+            col_count  = CardStatus.query.filter(CardStatus.card_id.in_(card_ids)).count()
             slot_count = (
                 Slot.query.filter(Slot.card_id.in_(card_ids)).count()
                 + Slot.query.filter(Slot.reserved_card_id.in_(card_ids)).count()
             )
             print(f"  Also removing: {sub_count} subtypes, {ene_count} energy types, "
-                  f"{dex_count} pokédex links, {col_count} collection entries, "
+                  f"{dex_count} pokédex links, {col_count} card status entries, "
                   f"{slot_count} slot references")
 
         if not skip_confirm:
@@ -59,7 +59,8 @@ def remove_set(set_id: str, skip_confirm: bool = False) -> None:
             CardSubType.query.filter(CardSubType.card_id.in_(card_ids)).delete(synchronize_session=False)
             CardEnergyType.query.filter(CardEnergyType.card_id.in_(card_ids)).delete(synchronize_session=False)
             CardPokedexNumber.query.filter(CardPokedexNumber.card_id.in_(card_ids)).delete(synchronize_session=False)
-            Collection.query.filter(Collection.card_id.in_(card_ids)).delete(synchronize_session=False)
+            CardStatus.query.filter(CardStatus.card_id.in_(card_ids)).delete(synchronize_session=False)
+            CollectionCard.query.filter(CollectionCard.card_id.in_(card_ids)).delete(synchronize_session=False)
             Slot.query.filter(Slot.card_id.in_(card_ids)).delete(synchronize_session=False)
             Slot.query.filter(Slot.reserved_card_id.in_(card_ids)).delete(synchronize_session=False)
 
