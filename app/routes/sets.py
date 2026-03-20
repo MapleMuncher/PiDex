@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from flask import Blueprint, render_template, request
-from sqlalchemy import distinct
+from sqlalchemy import case, distinct, func
 from sqlalchemy.orm import aliased
 
 from app import db
@@ -11,9 +11,143 @@ from app.sorting import DEFAULT_SORT, SORT_OPTIONS, apply_sort
 sets_bp = Blueprint("sets", __name__, url_prefix="/sets")
 
 
+# ---------------------------------------------------------------------------
+# Helper: build per-set collection stats in a single aggregated query
+# ---------------------------------------------------------------------------
+def _set_stats():
+    """
+    Returns a list of dicts, one per set, containing collection progress data.
+    Sorted newest-first. Each dict carries stats for both 'official' mode
+    (denominator = nr_official_cards) and 'db' mode (denominator = cards in DB).
+    """
+    owned_expr = func.sum(
+        case((CardStatus.owned == True, 1), else_=0)
+    ).label("owned_count")
+
+    wanted_only_expr = func.sum(
+        case(
+            (db.and_(CardStatus.wanted == True, CardStatus.owned != True), 1),
+            else_=0,
+        )
+    ).label("wanted_only_count")
+
+    # COUNT(Card.id) is 0 for sets with no cards in DB (LEFT JOIN gives NULL)
+    db_total_expr = func.count(Card.id).label("db_total")
+
+    rows = db.session.execute(
+        db.select(
+            Set.id,
+            Set.name,
+            Set.code,
+            Set.release_date,
+            Set.nr_official_cards,
+            Set.series_name,
+            Set.logo_url,
+            Set.symbol_url,
+            owned_expr,
+            wanted_only_expr,
+            db_total_expr,
+        )
+        .outerjoin(Card, Card.set_code == Set.id)
+        .outerjoin(CardStatus, CardStatus.card_id == Card.id)
+        .group_by(Set.id)
+        .order_by(Set.release_date.desc())
+    ).all()
+
+    result = []
+    for row in rows:
+        off_total    = row.nr_official_cards or 0
+        db_total     = row.db_total or 0
+        owned        = row.owned_count or 0
+        wanted_only  = row.wanted_only_count or 0
+
+        # Official-mode — 4 segments: owned | wanted | in-DB-untracked | not-in-DB
+        # Cap db_total to official range to avoid secret-rare inflation
+        db_in_off          = min(db_total, off_total)
+        off_untracked_db   = max(0, db_in_off - owned - wanted_only)
+        off_not_in_db      = max(0, off_total - db_in_off)
+        off_owned_pct      = round(owned            / off_total * 100, 1) if off_total > 0 else 0
+        off_wanted_pct     = round(wanted_only      / off_total * 100, 1) if off_total > 0 else 0
+        off_untracked_pct  = round(off_untracked_db / off_total * 100, 1) if off_total > 0 else 0
+        off_not_in_db_pct  = max(0.0, round(100 - off_owned_pct - off_wanted_pct - off_untracked_pct, 1))
+
+        # DB-mode (denominator = cards seeded in the database)
+        db_neither     = max(0, db_total - owned - wanted_only)
+        db_owned_pct   = round(owned       / db_total * 100, 1) if db_total > 0 else 0
+        db_wanted_pct  = round(wanted_only / db_total * 100, 1) if db_total > 0 else 0
+        db_neither_pct = max(0.0, round(100 - db_owned_pct - db_wanted_pct, 1))
+
+        # Tracked-mode (denominator = owned + wanted; no grey segments)
+        tr_total      = owned + wanted_only
+        tr_owned_pct  = round(owned       / tr_total * 100, 1) if tr_total > 0 else 0
+        tr_wanted_pct = max(0.0, round(100 - tr_owned_pct, 1)) if tr_total > 0 else 0
+
+        result.append({
+            "id":               row.id,
+            "name":             row.name,
+            "code":             row.code,
+            "release_date":     row.release_date,
+            "series_name":      row.series_name,
+            "logo_url":         row.logo_url,
+            "symbol_url":       row.symbol_url,
+            "owned":            owned,
+            "wanted_only":      wanted_only,
+            # Official mode (4-segment bar)
+            "total":            off_total,
+            "owned_pct":        off_owned_pct,
+            "wanted_pct":       off_wanted_pct,
+            "off_untracked_db": off_untracked_db,
+            "off_untracked_pct": off_untracked_pct,
+            "off_not_in_db":    off_not_in_db,
+            "off_not_in_db_pct": off_not_in_db_pct,
+            # DB mode
+            "db_total":         db_total,
+            "db_neither":       db_neither,
+            "db_owned_pct":     db_owned_pct,
+            "db_wanted_pct":    db_wanted_pct,
+            "db_neither_pct":   db_neither_pct,
+            # Tracked mode (owned + wanted only, no grey)
+            "tr_total":         tr_total,
+            "tr_owned_pct":     tr_owned_pct,
+            "tr_wanted_pct":    tr_wanted_pct,
+        })
+
+    return result
+
+
 @sets_bp.route("/")
 def index():
-    return render_template("sets/index.html")
+    view = request.args.get("view", "card")
+    if view not in ("card", "list"):
+        view = "card"
+    count = request.args.get("count", "tracked")
+    if count not in ("official", "db", "tracked"):
+        count = "tracked"
+
+    sets_data = _set_stats()
+
+    # Filter out sets irrelevant to the active count mode
+    if count == "tracked":
+        sets_data = [s for s in sets_data if s["owned"] > 0 or s["wanted_only"] > 0]
+    elif count == "db":
+        sets_data = [s for s in sets_data if s["db_total"] > 0]
+
+    # Group by series for section headers (preserve newest-first order)
+    series_order = []
+    grouped: dict[str, list] = defaultdict(list)
+    for s in sets_data:
+        key = s["series_name"] or "Unknown"
+        if key not in grouped:
+            series_order.append(key)
+        grouped[key].append(s)
+
+    return render_template(
+        "sets/index.html",
+        view=view,
+        count=count,
+        series_order=series_order,
+        grouped=grouped,
+    )
 
 
 @sets_bp.route("/<set_id>")
@@ -131,8 +265,6 @@ def detail(set_id):
         all_rarities=all_rarities,
         all_evo_lines=all_evo_lines,
         sort_options=[(k, v[0]) for k, v in SORT_OPTIONS.items()],
-        # set/series are page context, not user filters — pass None so
-        # any_filter and the Reset link aren't triggered by the URL set_id
         current_set_id=None,
         current_series=None,
         current_rarity=rarity,

@@ -2,6 +2,384 @@
 
 {% block title %}Sets{% endblock %}
 
+{% block extra_css %}
+<style>
+  /* ------------------------------------------------------------------ */
+  /* Sets index                                                           */
+  /* ------------------------------------------------------------------ */
+  .sets-progress {
+    height: 10px;
+    border-radius: 4px;
+    background-color: transparent;
+    overflow: hidden;
+  }
+  .sets-progress.progress   { background-color: transparent; }
+  .sets-progress-untracked  { background-color: #ced4da; } /* in DB, not tracked */
+  .sets-progress-neither    { background-color: #e9ecef; } /* not in DB at all */
+
+  .legend-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ---- Card view ---- */
+  .set-card {
+    color: inherit;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .set-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .set-card-logo-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem 0.5rem;
+    min-height: 72px;
+  }
+  .set-card-logo {
+    max-height: 52px;
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+  /* Shared symbol icon used in both card-body and list name cell */
+  .set-info-symbol {
+    height: 20px;
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+
+  /* ---- List view ---- */
+  .sets-table td, .sets-table th { padding: 0.45rem 0.75rem; }
+
+  /* Series header row inside the table */
+  .sets-series-row td {
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6c757d;
+    background-color: var(--pidex-grey);
+    padding-top: 0.6rem;
+    padding-bottom: 0.4rem;
+    border-top: 2px solid var(--pidex-border);
+  }
+
+  /* Logo cell — fixed-size flex box keeps all logos the same visual size */
+  .set-list-logo-cell {
+    width: 88px;
+    min-width: 88px;
+  }
+  .set-list-logo-box {
+    width: 80px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+  }
+  .set-list-logo {
+    max-height: 30px;
+    max-width: 80px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+
+  /* Symbol cell */
+  .set-list-symbol-cell {
+    width: 34px;
+    min-width: 34px;
+    text-align: center;
+  }
+  .set-list-symbol {
+    height: 20px;
+    width: auto;
+    object-fit: contain;
+    opacity: 0.85;
+  }
+
+  .cursor-pointer { cursor: pointer; }
+
+  /* Card-view series headers */
+  .sets-card-series-header {
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    border-bottom: 1px solid var(--pidex-border);
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.75rem;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<h1>Sets</h1>
+
+{# ------------------------------------------------------------------ #}
+{# Stacked-bar macro — call with (s, count)                           #}
+{# ------------------------------------------------------------------ #}
+{% macro set_progress_bar(s, count) %}
+  {%- if count == 'tracked' %}
+    {%- set t       = s.tr_total      -%}
+    {%- set o_pct   = s.tr_owned_pct  -%}
+    {%- set w_pct   = s.tr_wanted_pct -%}
+    {%- set u_pct   = 0               -%}
+    {%- set n_pct   = 0               -%}
+    {%- set tooltip = s.owned ~ ' owned · ' ~ s.wanted_only ~ ' wanted' -%}
+  {%- elif count == 'db' %}
+    {%- set t       = s.db_total       -%}
+    {%- set o_pct   = s.db_owned_pct   -%}
+    {%- set w_pct   = s.db_wanted_pct  -%}
+    {%- set u_pct   = 0                -%}
+    {%- set n_pct   = s.db_neither_pct -%}
+    {%- set tooltip = s.owned ~ ' owned · ' ~ s.wanted_only ~ ' wanted · ' ~ s.db_neither ~ ' not tracked · ' ~ t ~ ' total' -%}
+  {%- else %}
+    {%- set t       = s.total              -%}
+    {%- set o_pct   = s.owned_pct          -%}
+    {%- set w_pct   = s.wanted_pct         -%}
+    {%- set u_pct   = s.off_untracked_pct  -%}
+    {%- set n_pct   = s.off_not_in_db_pct  -%}
+    {%- set tooltip = s.owned ~ ' owned · ' ~ s.wanted_only ~ ' wanted · ' ~ s.off_untracked_db ~ ' in database · ' ~ s.off_not_in_db ~ ' not in database · ' ~ t ~ ' total' -%}
+  {%- endif %}
+  {% if t > 0 %}
+  <div class="progress sets-progress" title="{{ tooltip }}">
+    {% if o_pct > 0 %}<div class="progress-bar bg-success"           style="width:{{ o_pct }}%"></div>{% endif %}
+    {% if w_pct > 0 %}<div class="progress-bar bg-warning"           style="width:{{ w_pct }}%"></div>{% endif %}
+    {% if u_pct > 0 %}<div class="progress-bar sets-progress-untracked" style="width:{{ u_pct }}%"></div>{% endif %}
+    {% if n_pct > 0 %}<div class="progress-bar sets-progress-neither"   style="width:{{ n_pct }}%"></div>{% endif %}
+  </div>
+  {% else %}
+  <div class="progress sets-progress">
+    <div class="progress-bar sets-progress-neither" style="width:100%"></div>
+  </div>
+  {% endif %}
+{% endmacro %}
+
+{# ------------------------------------------------------------------ #}
+{# Page header: title + view toggle + count toggle                    #}
+{# ------------------------------------------------------------------ #}
+<div class="page-header d-flex align-items-start justify-content-between flex-wrap gap-2">
+  <h1 class="mb-0">Sets</h1>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+
+    {# Count toggle (Official / In Database / Collected) #}
+    <div class="btn-group btn-group-sm" role="group" aria-label="Count mode">
+      <a href="{{ url_for('sets.index', view=view, count='official') }}"
+         class="btn {{ 'btn-secondary' if count == 'official' else 'btn-outline-secondary' }}">
+        Official
+      </a>
+      <a href="{{ url_for('sets.index', view=view, count='db') }}"
+         class="btn {{ 'btn-secondary' if count == 'db' else 'btn-outline-secondary' }}">
+        In database
+      </a>
+      <a href="{{ url_for('sets.index', view=view, count='tracked') }}"
+         class="btn {{ 'btn-secondary' if count == 'tracked' else 'btn-outline-secondary' }}">
+        Collected
+      </a>
+    </div>
+
+    {# View toggle (Card / List) #}
+    <div class="btn-group btn-group-sm" role="group" aria-label="View toggle">
+      <a href="{{ url_for('sets.index', view='card', count=count) }}"
+         class="btn {{ 'btn-secondary' if view == 'card' else 'btn-outline-secondary' }}">
+        <i class="bi bi-grid me-1"></i>Cards
+      </a>
+      <a href="{{ url_for('sets.index', view='list', count=count) }}"
+         class="btn {{ 'btn-secondary' if view == 'list' else 'btn-outline-secondary' }}">
+        <i class="bi bi-list-ul me-1"></i>List
+      </a>
+    </div>
+
+  </div>
+</div>
+
+{# Legend #}
+<div class="d-flex align-items-center gap-3 mb-4 flex-wrap small text-muted">
+  <span class="d-flex align-items-center gap-1">
+    <span class="legend-swatch bg-success"></span>Owned
+  </span>
+  <span class="d-flex align-items-center gap-1">
+    <span class="legend-swatch bg-warning"></span>Wanted
+  </span>
+  {% if count == 'official' %}
+  <span class="d-flex align-items-center gap-1">
+    <span class="legend-swatch" style="background:#ced4da"></span>In database
+  </span>
+  <span class="d-flex align-items-center gap-1">
+    <span class="legend-swatch" style="background:#e9ecef;border:1px solid #ced4da;"></span>Not in database
+  </span>
+  {% elif count == 'db' %}
+  <span class="d-flex align-items-center gap-1">
+    <span class="legend-swatch" style="background:#e9ecef;border:1px solid #ced4da;"></span>Not tracked
+  </span>
+  {% endif %}
+</div>
+
+{# ==================================================================== #}
+{# CARD VIEW                                                             #}
+{# ==================================================================== #}
+{% if view == 'card' %}
+
+  {% for series_name in series_order %}
+  <h5 class="sets-card-series-header">{{ series_name }}</h5>
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-3 mb-4">
+    {% for s in grouped[series_name] %}
+    <div class="col">
+      <a href="{{ url_for('sets.detail', set_id=s.id) }}"
+         class="card h-100 text-decoration-none set-card">
+
+        {# Logo only #}
+        <div class="set-card-logo-wrap">
+          <img
+            src="/images/sets/logos/{{ s.id }}.png"
+            {% if s.logo_url %}onerror="this.onerror=null;this.src='{{ s.logo_url }}'"{% endif %}
+            alt="{{ s.name }}"
+            class="set-card-logo">
+        </div>
+
+        <div class="card-body py-2 px-3">
+          {# Combined: symbol + name + faded code #}
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <img
+              src="/images/sets/symbols/{{ s.id }}.png"
+              {% if s.symbol_url %}onerror="this.onerror=null;this.src='{{ s.symbol_url }}'"{% endif %}
+              alt=""
+              class="set-info-symbol">
+            <div class="min-w-0">
+              <div class="fw-semibold text-truncate lh-sm" title="{{ s.name }}">{{ s.name }}</div>
+              <div class="small lh-sm" style="color:#adb5bd">
+                {{ s.code }}{% if s.release_date %} · {{ s.release_date.strftime('%b %Y') }}{% endif %}
+              </div>
+            </div>
+          </div>
+
+          {{ set_progress_bar(s, count) }}
+
+          {# Counts under the bar #}
+          <div class="d-flex justify-content-between small mt-1">
+            <span class="text-success fw-semibold">{{ s.owned }} owned</span>
+            {% if s.wanted_only > 0 %}
+              <span class="text-warning fw-semibold">{{ s.wanted_only }} wanted</span>
+            {% endif %}
+            {% if count == 'tracked' %}
+              <span style="color:#ced4da">{{ s.total }}</span>
+            {% elif count == 'db' %}
+              <span class="text-muted">{{ s.db_total }} in DB</span>
+            {% else %}
+              <span class="text-muted">{{ s.total }} total</span>
+            {% endif %}
+          </div>
+        </div>
+
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+{# ==================================================================== #}
+{# LIST VIEW — single table so column widths are consistent             #}
+{# ==================================================================== #}
+{% else %}
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle sets-table">
+      <thead class="table-light">
+        <tr>
+          <th class="set-list-logo-cell"></th>
+          <th class="set-list-symbol-cell"></th>
+          <th>Set</th>
+          <th class="d-none d-md-table-cell">Release</th>
+          <th style="min-width:140px">Progress</th>
+          <th class="text-end">Owned</th>
+          <th class="text-end d-none d-sm-table-cell">Wanted</th>
+          <th class="text-end">
+            {%- if count == 'tracked' %}Collected
+            {%- elif count == 'db' %}In DB
+            {%- else %}Total{%- endif %}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for series_name in series_order %}
+
+        {# Series header row #}
+        <tr class="sets-series-row">
+          <td colspan="8">{{ series_name }}</td>
+        </tr>
+
+        {% for s in grouped[series_name] %}
+        <tr class="cursor-pointer"
+            onclick="location.href='{{ url_for('sets.detail', set_id=s.id) }}'">
+
+          {# Logo — constrained to fixed box #}
+          <td class="set-list-logo-cell">
+            <div class="set-list-logo-box">
+              <img
+                src="/images/sets/logos/{{ s.id }}.png"
+                {% if s.logo_url %}onerror="this.onerror=null;this.src='{{ s.logo_url }}'"{% endif %}
+                alt="{{ s.name }}"
+                class="set-list-logo">
+            </div>
+          </td>
+
+          {# Symbol — separate column #}
+          <td class="set-list-symbol-cell">
+            <img
+              src="/images/sets/symbols/{{ s.id }}.png"
+              {% if s.symbol_url %}onerror="this.onerror=null;this.src='{{ s.symbol_url }}'"{% endif %}
+              alt=""
+              class="set-list-symbol">
+          </td>
+
+          {# Name + faded code on same line #}
+          <td>
+            <span class="fw-semibold">{{ s.name }}</span>
+            <span class="small ms-1" style="color:#adb5bd">{{ s.code }}</span>
+          </td>
+
+          <td class="d-none d-md-table-cell text-muted small">
+            {% if s.release_date %}{{ s.release_date.strftime('%b %Y') }}{% endif %}
+          </td>
+          <td>{{ set_progress_bar(s, count) }}</td>
+          <td class="text-end text-success fw-semibold small">{{ s.owned }}</td>
+          <td class="text-end small d-none d-sm-table-cell">
+            {% if s.wanted_only > 0 %}
+              <span class="text-warning fw-semibold">{{ s.wanted_only }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="text-end small">
+            {%- if count == 'tracked' %}
+              <span class="text-muted">{{ s.tr_total }}</span>
+              <span style="color:#ced4da">/{{ s.total }}</span>
+            {%- elif count == 'db' %}
+              <span class="text-muted">{{ s.db_total }}</span>
+            {%- else %}
+              <span class="text-muted">{{ s.total }}</span>
+            {%- endif %}
+          </td>
+        </tr>
+        {% endfor %}
+
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+{% endif %}
+
 {% endblock %}
