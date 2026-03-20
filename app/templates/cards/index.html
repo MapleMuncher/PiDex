@@ -57,12 +57,17 @@
 
       <div class="col-12 col-sm-6 col-lg-2">
         <label class="form-label small fw-semibold mb-1">Pokémon</label>
-        <input
-          type="text"
-          name="pokemon"
-          class="form-control form-control-sm"
-          placeholder="e.g. Pikachu"
-          value="{{ current_pokemon or '' }}">
+        <div class="position-relative">
+          <input
+            type="text"
+            name="pokemon"
+            id="pokemon-input"
+            class="form-control form-control-sm"
+            placeholder="Search Pokémon…"
+            value="{{ current_pokemon or '' }}"
+            autocomplete="off">
+          <ul id="pokemon-suggestions" class="autocomplete-dropdown list-unstyled mb-0 d-none"></ul>
+        </div>
       </div>
 
       <div class="col-12 col-sm-6 col-lg-2">
@@ -157,4 +162,59 @@
   </div>
 {% endif %}
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const input    = document.getElementById('pokemon-input');
+  const dropdown = document.getElementById('pokemon-suggestions');
+  let debounce;
+
+  input.addEventListener('input', function () {
+    clearTimeout(debounce);
+    const q = this.value.trim();
+    if (!q) { hide(); return; }
+    debounce = setTimeout(() => suggest(q), 200);
+  });
+
+  async function suggest(q) {
+    try {
+      const resp = await fetch(`{{ url_for('pokemon.search') }}?q=${encodeURIComponent(q)}`);
+      const data = await resp.json();
+      if (!data.length) { hide(); return; }
+
+      dropdown.innerHTML = data.map(p =>
+        `<li class="autocomplete-item" data-name="${p.name}">
+           <span class="autocomplete-dex">#${String(p.id).padStart(3, '0')}</span>
+           ${p.name}
+         </li>`
+      ).join('');
+      dropdown.classList.remove('d-none');
+
+      dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+        item.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          input.value = this.dataset.name;
+          hide();
+          input.form.submit();
+        });
+      });
+    } catch (e) { hide(); }
+  }
+
+  function hide() {
+    dropdown.classList.add('d-none');
+    dropdown.innerHTML = '';
+  }
+
+  document.addEventListener('click', e => {
+    if (!input.contains(e.target) && !dropdown.contains(e.target)) hide();
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') hide();
+  });
+})();
+</script>
 {% endblock %}

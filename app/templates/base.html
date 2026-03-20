@@ -334,6 +334,41 @@
     }
 
     /* ------------------------------------------------------------------ */
+    /* Autocomplete dropdown                                                 */
+    /* ------------------------------------------------------------------ */
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--pidex-white);
+      border: 1px solid var(--pidex-border);
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      z-index: 1050;
+      max-height: 220px;
+      overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .autocomplete-item {
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+
+    .autocomplete-item:hover {
+      background-color: var(--pidex-teal-light);
+    }
+
+    .autocomplete-dex {
+      color: var(--bs-secondary);
+      font-size: 0.78rem;
+      min-width: 38px;
+      display: inline-block;
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Pagination — teal accent                                             */
     /* ------------------------------------------------------------------ */
     .page-link {
