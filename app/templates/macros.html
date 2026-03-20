@@ -5,22 +5,24 @@
 
 
 {# ----------------------------------------------------------------------
-   card_thumbnail(card, collection_entry=None)
+   card_thumbnail(card, card_status=None)
 
    Renders a clickable card thumbnail showing the card image and, if the
-   card is in the user's collection, a WANTED or OWNED status badge.
+   card is in the user's collection, an Owned and/or Wanted status badge.
 
    Args:
-     card             — a Card model instance
-     collection_entry — a Collection model instance or None
+     card        — a Card model instance
+     card_status — a CardStatus model instance or None
    ---------------------------------------------------------------------- #}
-{% macro card_thumbnail(card, collection_entry=None) %}
-{% set status = collection_entry.status if collection_entry else '' %}
+{% macro card_thumbnail(card, card_status=None) %}
+{% set is_owned = card_status.owned if card_status else false %}
+{% set is_wanted = card_status.wanted if card_status else false %}
+{% set thumb_class = 'owned' if is_owned else ('wanted' if is_wanted else 'none') %}
 <a href="{{ url_for('cards.detail', card_id=card.id) }}"
    class="card-thumb text-decoration-none"
    title="{{ card.name }}">
 
-  <div class="card-thumb-inner card-thumb--{{ status | lower if status else 'none' }}">
+  <div class="card-thumb-inner card-thumb--{{ thumb_class }}">
 
     {# Card image — use WebP thumbnail for speed, fall back to PNG, then remote URL #}
     {% if card.image_url %}
@@ -37,16 +39,16 @@
     {% endif %}
 
     {# Grey overlay for cards not owned #}
-    {% if status != 'OWNED' %}
+    {% if not is_owned %}
       <div class="card-thumb-overlay"></div>
     {% endif %}
 
-    {# Collection status badge #}
-    {% if status == 'OWNED' %}
+    {# Status badges #}
+    {% if is_owned %}
       <span class="card-thumb-badge badge badge-owned">
         <i class="bi bi-check-lg me-1"></i>Owned
       </span>
-    {% elif status == 'WANTED' %}
+    {% elif is_wanted %}
       <span class="card-thumb-badge badge badge-wanted">
         <i class="bi bi-star-fill me-1"></i>Wanted
       </span>

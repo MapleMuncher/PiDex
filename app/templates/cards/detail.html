@@ -57,29 +57,23 @@
     <div class="mb-4"
          id="collection-toggle"
          data-card-id="{{ card.id }}"
-         data-status="{{ collection_entry.status if collection_entry else '' }}">
+         data-owned="{{ 'true' if card_status and card_status.owned else 'false' }}"
+         data-wanted="{{ 'true' if card_status and card_status.wanted else 'false' }}">
 
       <div class="d-flex gap-2 flex-wrap">
 
         <button
           class="btn btn-sm collection-btn"
-          data-target-status=""
-          onclick="setCollectionStatus(this)">
-          <i class="bi bi-x-circle me-1"></i>Unmarked
-        </button>
-
-        <button
-          class="btn btn-sm collection-btn"
-          data-target-status="WANTED"
-          onclick="setCollectionStatus(this)">
-          <i class="bi bi-star me-1"></i>Wanted
-        </button>
-
-        <button
-          class="btn btn-sm collection-btn"
-          data-target-status="OWNED"
-          onclick="setCollectionStatus(this)">
+          data-field="owned"
+          onclick="toggleCollectionField(this)">
           <i class="bi bi-check-circle me-1"></i>Owned
+        </button>
+
+        <button
+          class="btn btn-sm collection-btn"
+          data-field="wanted"
+          onclick="toggleCollectionField(this)">
+          <i class="bi bi-star me-1"></i>Wanted
         </button>
 
       </div>
@@ -166,50 +160,56 @@
 {% block extra_js %}
 <script>
   // ----------------------------------------------------------------
-  // Render button active states based on current status
+  // Render button active states based on owned/wanted
   // ----------------------------------------------------------------
-  function renderButtons(status) {
+  function renderButtons() {
+    const toggle = document.getElementById("collection-toggle");
+    const owned  = toggle.dataset.owned === "true";
+    const wanted = toggle.dataset.wanted === "true";
+
     document.querySelectorAll(".collection-btn").forEach(btn => {
-      const target = btn.dataset.targetStatus;
+      const field = btn.dataset.field;
       btn.classList.remove(
-        "btn-outline-secondary", "btn-warning", "btn-success",
-        "btn-secondary", "active"
+        "btn-outline-secondary", "btn-warning", "btn-success"
       );
-      if (target === status) {
-        // Active state
-        if (status === "WANTED") btn.classList.add("btn-warning");
-        else if (status === "OWNED") btn.classList.add("btn-success");
-        else btn.classList.add("btn-secondary");
-      } else {
-        // Inactive state
-        if (target === "WANTED") btn.classList.add("btn-outline-secondary");
-        else if (target === "OWNED") btn.classList.add("btn-outline-secondary");
-        else btn.classList.add("btn-outline-secondary");
+      if (field === "owned") {
+        btn.classList.add(owned ? "btn-success" : "btn-outline-secondary");
+      } else if (field === "wanted") {
+        btn.classList.add(wanted ? "btn-warning" : "btn-outline-secondary");
       }
     });
   }
 
   // ----------------------------------------------------------------
-  // Send status update to the server
+  // Toggle a field and send update to the server
   // ----------------------------------------------------------------
-  async function setCollectionStatus(btn) {
+  async function toggleCollectionField(btn) {
     const toggle   = document.getElementById("collection-toggle");
     const cardId   = toggle.dataset.cardId;
-    const newStatus = btn.dataset.targetStatus || null;
+    const field    = btn.dataset.field;
     const feedback = document.getElementById("collection-feedback");
+
+    // Toggle the clicked field
+    const newOwned  = field === "owned"
+      ? toggle.dataset.owned !== "true"
+      : toggle.dataset.owned === "true";
+    const newWanted = field === "wanted"
+      ? toggle.dataset.wanted !== "true"
+      : toggle.dataset.wanted === "true";
 
     try {
       const response = await fetch("{{ url_for('collection.toggle') }}", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card_id: cardId, status: newStatus })
+        body: JSON.stringify({ card_id: cardId, owned: newOwned, wanted: newWanted })
       });
 
       if (!response.ok) throw new Error("Request failed");
 
       const data = await response.json();
-      toggle.dataset.status = data.status || "";
-      renderButtons(data.status || "");
+      toggle.dataset.owned  = data.owned ? "true" : "false";
+      toggle.dataset.wanted = data.wanted ? "true" : "false";
+      renderButtons();
       feedback.textContent = "";
 
     } catch (err) {
@@ -220,7 +220,6 @@
   // ----------------------------------------------------------------
   // Initialise button states on page load
   // ----------------------------------------------------------------
-  const toggle = document.getElementById("collection-toggle");
-  renderButtons(toggle.dataset.status);
+  renderButtons();
 </script>
 {% endblock %}

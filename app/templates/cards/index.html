@@ -98,7 +98,7 @@
   <div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 row-cols-xl-10 g-2">
     {% for card in cards %}
       <div class="col">
-        {{ card_thumbnail(card, collection_map.get(card.id)) }}
+        {{ card_thumbnail(card, status_map.get(card.id)) }}
       </div>
     {% endfor %}
   </div>
