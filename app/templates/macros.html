@@ -22,11 +22,11 @@
 
   <div class="card-thumb-inner card-thumb--{{ status | lower if status else 'none' }}">
 
-    {# Card image #}
+    {# Card image — use WebP thumbnail for speed, fall back to PNG, then remote URL #}
     {% if card.image_url %}
       <img
-        src="/images/cards/{{ card.set_code }}/{{ card.set_number }}.png"
-        onerror="this.src='{{ card.image_url }}'"
+        src="/images/cards/{{ card.set_code }}/{{ card.set_number }}_thumb.webp"
+        onerror="this.onerror=null;this.src='/images/cards/{{ card.set_code }}/{{ card.set_number }}.png'"
         alt="{{ card.name }}"
         class="card-thumb-img"
         loading="lazy">
