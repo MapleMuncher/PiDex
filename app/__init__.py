@@ -34,7 +34,7 @@ def create_app():
         from app import models  # noqa: F401
 
     # Serve images locally in development — on the Pi this is handled by Nginx
-    if app.debug:
+    if os.environ.get('FLASK_DEBUG') == '1':
         from flask import send_from_directory
         images_dir = os.path.join(app.root_path, '..', 'images')
 
