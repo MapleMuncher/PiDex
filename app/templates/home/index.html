@@ -2,43 +2,233 @@
 
 {% block title %}Home{% endblock %}
 
+{% block extra_css %}
+<style>
+  /* ------------------------------------------------------------------ */
+  /* Dashboard                                                            */
+  /* ------------------------------------------------------------------ */
+  .dashboard-hero {
+    padding: 2.5rem 0 2rem;
+  }
+
+  .dashboard-hero h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .dashboard-hero p {
+    color: #6c757d;
+    margin-bottom: 0;
+    font-size: 1rem;
+  }
+
+  /* Stat cards */
+  .stat-card {
+    background: var(--pidex-white);
+    border: 1px solid var(--pidex-border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .stat-icon-teal  { background-color: var(--pidex-teal-light); color: var(--pidex-teal); }
+  .stat-icon-green { background-color: #d1e7dd; color: #198754; }
+  .stat-icon-yellow { background-color: #fff3cd; color: #997404; }
+  .stat-icon-blue  { background-color: #cfe2ff; color: #0a58ca; }
+
+  .stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #212529;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 1px;
+  }
+
+  /* Nav tiles */
+  .nav-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    background: var(--pidex-white);
+    border: 1px solid var(--pidex-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+    height: 100%;
+  }
+
+  .nav-tile:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    border-color: var(--pidex-teal);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .nav-tile-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background-color: var(--pidex-teal-light);
+    color: var(--pidex-teal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .nav-tile-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0;
+  }
+
+  .nav-tile-desc {
+    font-size: 0.82rem;
+    color: #6c757d;
+    margin-bottom: 0;
+    line-height: 1.4;
+  }
+
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #adb5bd;
+    margin-bottom: 0.75rem;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container">
-    <h1 class="mb-4">Welcome to PiDex!</h1>
-    <p class="lead">Your personal Pokémon card collection manager.</p>
+
+{# Hero #}
+<div class="dashboard-hero">
+  <h1>PiDex</h1>
+  <p>Your Pokémon TCG collection, at a glance.</p>
 </div>
 
-<div class="container">
-    <ul class="list-group ms-auto gap-1">
-    
-        <li class="list-group-item s">
-        <a class="nav-link fs-4"
-            href="{{ url_for('cards.index') }}">
-            <i class="bi bi-grid me-3"></i>Cards
-        </a>
-        </li>
-    
-        <li class="list-group-item s">
-        <a class="nav-link fs-4"
-            href="{{ url_for('sets.index') }}">
-            <i class="bi bi-collection me-3"></i>Sets
-        </a>
-        </li>
-    
-        <li class="list-group-item s">
-        <a class="nav-link fs-4"
-            href="{{ url_for('collection.index') }}">
-            <i class="bi bi-star me-3"></i>Collection
-        </a>
-        </li>
-    
-        <li class="list-group-item s">
-        <a class="nav-link fs-4"
-            href="{{ url_for('binders.index') }}">
-            <i class="bi bi-book me-3"></i>Binders
-        </a>
-        </li>
-    
-    </ul>
+{# Stats row #}
+<div class="row g-3 mb-5">
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-green">
+        <i class="bi bi-check-circle"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ owned_count }}</div>
+        <div class="stat-label">Cards owned</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-yellow">
+        <i class="bi bi-bookmark-heart"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ wanted_only_count }}</div>
+        <div class="stat-label">Cards wanted</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-teal">
+        <i class="bi bi-collection"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ sets_with_cards }}</div>
+        <div class="stat-label">Sets in database</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-blue">
+        <i class="bi bi-grid"></i>
+      </div>
+      <div>
+        <div class="stat-value">{{ total_cards }}</div>
+        <div class="stat-label">Cards in database</div>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+{# Navigation tiles #}
+<p class="section-label">Browse</p>
+<div class="row g-3">
+
+  <div class="col-12 col-sm-6 col-lg-3">
+    <a href="{{ url_for('cards.index') }}" class="nav-tile">
+      <div class="nav-tile-icon">
+        <i class="bi bi-grid"></i>
+      </div>
+      <p class="nav-tile-title">Cards</p>
+      <p class="nav-tile-desc">Search and filter across all {{ total_cards }} cards in the database.</p>
+    </a>
+  </div>
+
+  <div class="col-12 col-sm-6 col-lg-3">
+    <a href="{{ url_for('sets.index') }}" class="nav-tile">
+      <div class="nav-tile-icon">
+        <i class="bi bi-collection"></i>
+      </div>
+      <p class="nav-tile-title">Sets</p>
+      <p class="nav-tile-desc">Browse all {{ total_sets }} sets, track completion and view progress.</p>
+    </a>
+  </div>
+
+  <div class="col-12 col-sm-6 col-lg-3">
+    <a href="{{ url_for('collection.index') }}" class="nav-tile">
+      <div class="nav-tile-icon">
+        <i class="bi bi-star"></i>
+      </div>
+      <p class="nav-tile-title">Collection</p>
+      <p class="nav-tile-desc">Manage your {{ owned_count }} owned and {{ wanted_only_count }} wanted cards.</p>
+    </a>
+  </div>
+
+  <div class="col-12 col-sm-6 col-lg-3">
+    <a href="{{ url_for('binders.index') }}" class="nav-tile">
+      <div class="nav-tile-icon">
+        <i class="bi bi-book"></i>
+      </div>
+      <p class="nav-tile-title">Binders</p>
+      <p class="nav-tile-desc">Organise your cards into custom binders.</p>
+    </a>
+  </div>
+
+</div>
+
 {% endblock %}
