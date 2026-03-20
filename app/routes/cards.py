@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request
 from sqlalchemy import distinct
 
 from app import db
-from app.models import Card, CardPokedexNumber, Collection, Pokemon, Set
+from app.models import Card, CardPokedexNumber, CardStatus, Pokemon, Set
 from app.sorting import DEFAULT_SORT, SORT_OPTIONS, apply_sort, needs_set_join
 
 cards_bp = Blueprint("cards", __name__, url_prefix="/cards")
@@ -56,12 +56,12 @@ def index():
     pagination          = db.paginate(query, page=page, per_page=CARDS_PER_PAGE, error_out=False)
     cards               = pagination.items
 
-    # Build collection map for badge display
-    card_ids        = [c.id for c in cards]
-    collection_rows = db.session.execute(
-        db.select(Collection).where(Collection.card_id.in_(card_ids))
+    # Build status map for badge display
+    card_ids    = [c.id for c in cards]
+    status_rows = db.session.execute(
+        db.select(CardStatus).where(CardStatus.card_id.in_(card_ids))
     ).scalars().all()
-    collection_map  = {c.card_id: c for c in collection_rows}
+    status_map  = {s.card_id: s for s in status_rows}
 
     # Filter options
     all_sets     = db.session.execute(
@@ -80,7 +80,7 @@ def index():
         "cards/index.html",
         cards_pagination=pagination,
         cards=cards,
-        collection_map=collection_map,
+        status_map=status_map,
         all_sets=all_sets,
         all_series=all_series,
         all_rarities=all_rarities,
@@ -97,10 +97,10 @@ def index():
 def detail(card_id):
     """Show a single card's details."""
     card             = db.get_or_404(Card, card_id)
-    collection_entry = db.session.get(Collection, card_id)
+    card_status = db.session.get(CardStatus, card_id)
 
     return render_template(
         "cards/detail.html",
         card=card,
-        collection_entry=collection_entry,
+        card_status=card_status,
     )

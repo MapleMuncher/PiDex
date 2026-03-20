@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template
 
 from app import db
-from app.models import Card, CardPokedexNumber, Collection, Pokemon
+from app.models import Card, CardPokedexNumber, CardStatus, Pokemon
 
 pokemon_bp = Blueprint("pokemon", __name__, url_prefix="/pokemon")
 
@@ -23,15 +23,15 @@ def detail(pokedex_number):
         .order_by(Card.set_code, Card.set_number)
     ).scalars().all()
 
-    # Build collection map for badge display
-    collection_rows = db.session.execute(
-        db.select(Collection).where(Collection.card_id.in_(card_ids))
+    # Build status map for badge display
+    status_rows = db.session.execute(
+        db.select(CardStatus).where(CardStatus.card_id.in_(card_ids))
     ).scalars().all()
-    collection_map = {c.card_id: c for c in collection_rows}
+    status_map = {s.card_id: s for s in status_rows}
 
     return render_template(
         "pokemon/detail.html",
         pokemon=pokemon,
         cards=cards,
-        collection_map=collection_map,
+        status_map=status_map,
     )
