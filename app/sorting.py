@@ -20,15 +20,13 @@ from app.models import Card, CardPokedexNumber, Pokemon, Set
 # key  → (display label, needs_set_join, needs_pokemon_join)
 # ---------------------------------------------------------------------------
 SORT_OPTIONS: dict[str, tuple[str, bool, bool]] = {
-    "set":          ("Set / number",        True,  False),
-    "name":         ("Name A–Z",            False, False),
-    "rarity_asc":   ("Rarity (low–high)",   False, False),
-    "rarity_desc":  ("Rarity (high–low)",   False, False),
-    "release_desc": ("Newest first",        True,  False),
-    "release_asc":  ("Oldest first",        True,  False),
-    "pokemon_name": ("Pokémon A–Z",         False, True),
-    "evo_line":     ("Evolution line",      False, True),
-    "category":     ("Category",            False, True),
+    "release_desc": ("Newest first",   True,  False),
+    "release_asc":  ("Oldest first",   True,  False),
+    "pokedex_asc":  ("Pokédex number", True,  True),
+    "evo_line":     ("Evolution line", True,  True),
+    "generation":   ("Generation",     True,  True),
+    "name":         ("Name A–Z",       False, False),
+    "category":     ("Category",       True,  True),
 }
 
 DEFAULT_SORT = "release_desc"
@@ -66,6 +64,18 @@ def _primary_pokemon_subquery():
 
 
 # ---------------------------------------------------------------------------
+# Numeric set number expression
+#
+# set_number is stored as a string (e.g. "15", "TG01"). Casting to INTEGER
+# in SQLite extracts the leading numeric part: CAST("15" AS INTEGER) = 15,
+# CAST("TG01" AS INTEGER) = 0. Non-numeric cards sort before numbered ones,
+# which is acceptable for the purposes of secondary tiebreaking.
+# ---------------------------------------------------------------------------
+def _set_number_int():
+    return func.cast(Card.set_number, db.Integer)
+
+
+# ---------------------------------------------------------------------------
 # apply_sort
 # ---------------------------------------------------------------------------
 def apply_sort(query, sort_key: str, has_set_join: bool = False, has_pokemon_join: bool = False):
@@ -97,38 +107,65 @@ def apply_sort(query, sort_key: str, has_set_join: bool = False, has_pokemon_joi
         )
 
     # Apply ORDER BY
-    if sort_key == "set":
-        query = query.order_by(Set.release_date, Card.set_code, Card.set_number)
-    elif sort_key == "name":
-        query = query.order_by(Card.name)
-    elif sort_key == "rarity_asc":
-        query = query.order_by(Card.norm_rarity_code, Card.set_code, Card.set_number)
-    elif sort_key == "rarity_desc":
-        query = query.order_by(Card.norm_rarity_code.desc(), Card.set_code, Card.set_number)
-    elif sort_key == "release_desc":
-        query = query.order_by(Set.release_date.desc(), Card.set_number)
+    if sort_key == "release_desc":
+        # Default: newest sets first, then by card number within the set
+        query = query.order_by(
+            Set.release_date.desc(),
+            _set_number_int(),
+        )
+
     elif sort_key == "release_asc":
-        query = query.order_by(Set.release_date, Card.set_number)
-    elif sort_key == "pokemon_name":
-        query = query.order_by(Pokemon.name, Card.set_code, Card.set_number)
+        query = query.order_by(
+            Set.release_date,
+            _set_number_int(),
+        )
+
+    elif sort_key == "pokedex_asc":
+        # Pokédex number ascending → release date descending → set number ascending
+        query = query.order_by(
+            Pokemon.id,
+            Set.release_date.desc(),
+            _set_number_int(),
+        )
+
     elif sort_key == "evo_line":
-        # Group by evolution family, then order within it by stage
+        # Evolution family → stage within family → pokédex number → newest first → set number
         query = query.order_by(
             Pokemon.evo_line,
             Pokemon.stage,
-            Pokemon.name,
-            Card.set_code,
-            Card.set_number,
+            Pokemon.id,
+            Set.release_date.desc(),
+            _set_number_int(),
         )
+
+    elif sort_key == "generation":
+        # Generation → evolution family → stage → pokédex number → newest first → set number
+        query = query.order_by(
+            Pokemon.generation,
+            Pokemon.evo_line,
+            Pokemon.stage,
+            Pokemon.id,
+            Set.release_date.desc(),
+            _set_number_int(),
+        )
+
+    elif sort_key == "name":
+        query = query.order_by(
+            Card.name,
+            Card.set_code,
+            _set_number_int(),
+        )
+
     elif sort_key == "category":
-        # Order by category code (A=3-stage, B=2-stage, E=standalone, F=legendary...)
-        # then group evolution lines together within each category
+        # Category (A=3-stage, B=2-stage, E=standalone, F=legendary) →
+        # evolution family → stage → pokédex number → newest first → set number
         query = query.order_by(
             Pokemon.category,
             Pokemon.evo_line,
             Pokemon.stage,
-            Card.set_code,
-            Card.set_number,
+            Pokemon.id,
+            Set.release_date.desc(),
+            _set_number_int(),
         )
 
     return query

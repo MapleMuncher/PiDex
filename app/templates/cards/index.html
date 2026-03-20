@@ -21,7 +21,7 @@
 
       <div class="col-12 col-sm-6 col-lg-3">
         <label class="form-label small fw-semibold mb-1">Series</label>
-        <select name="series" class="form-select form-select-sm">
+        <select name="series" class="form-select form-select-sm" onchange="this.form.submit()">
           <option value="">All series</option>
           {% for s in all_series %}
             <option value="{{ s }}" {% if s == current_series %}selected{% endif %}>
@@ -33,7 +33,7 @@
 
       <div class="col-12 col-sm-6 col-lg-3">
         <label class="form-label small fw-semibold mb-1">Set</label>
-        <select name="set_id" class="form-select form-select-sm">
+        <select name="set_id" class="form-select form-select-sm" onchange="this.form.submit()">
           <option value="">All sets</option>
           {% for s in all_sets %}
             <option value="{{ s.id }}" {% if s.id == current_set_id %}selected{% endif %}>
@@ -45,7 +45,7 @@
 
       <div class="col-12 col-sm-6 col-lg-2">
         <label class="form-label small fw-semibold mb-1">Rarity</label>
-        <select name="rarity" class="form-select form-select-sm">
+        <select name="rarity" class="form-select form-select-sm" onchange="this.form.submit()">
           <option value="">All rarities</option>
           {% for r in all_rarities %}
             <option value="{{ r }}" {% if r == current_rarity %}selected{% endif %}>
@@ -67,7 +67,7 @@
 
       <div class="col-12 col-sm-6 col-lg-2">
         <label class="form-label small fw-semibold mb-1">Sort by</label>
-        <select name="sort" class="form-select form-select-sm">
+        <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
           {% for key, label in sort_options %}
             <option value="{{ key }}" {% if key == current_sort %}selected{% endif %}>
               {{ label }}

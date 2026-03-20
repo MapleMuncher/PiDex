@@ -7,7 +7,7 @@ from app.sorting import DEFAULT_SORT, SORT_OPTIONS, apply_sort, needs_set_join
 
 cards_bp = Blueprint("cards", __name__, url_prefix="/cards")
 
-CARDS_PER_PAGE = 60
+CARDS_PER_PAGE = 30
 
 
 def _base_query(set_id=None, series=None, rarity=None, pokemon=None):
