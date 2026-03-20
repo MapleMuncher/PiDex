@@ -25,6 +25,17 @@
   </p>
 </div>
 
+{# ------------------------------------------------------------------ #}
+{# Filter bar                                                           #}
+{# ------------------------------------------------------------------ #}
+{% set filter_action    = url_for('pokemon.detail', pokedex_number=pokemon.id) %}
+{% set filter_reset_url = url_for('pokemon.detail', pokedex_number=pokemon.id) %}
+{% set show_pokemon     = false %}
+{% include '_filter_bar.html' %}
+
+{# ------------------------------------------------------------------ #}
+{# Card grid                                                            #}
+{# ------------------------------------------------------------------ #}
 {% if cards %}
   <div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 row-cols-xl-10 g-2">
     {% for card in cards %}
@@ -36,7 +47,11 @@
 {% else %}
   <div class="text-center py-5 text-muted">
     <i class="bi bi-search fs-1 d-block mb-3"></i>
-    <p>No cards found for {{ pokemon.name }}.</p>
+    <p>No cards found for {{ pokemon.name }} matching your filters.</p>
+    <a href="{{ url_for('pokemon.detail', pokedex_number=pokemon.id) }}"
+       class="btn btn-outline-secondary btn-sm mt-2">
+      Clear filters
+    </a>
   </div>
 {% endif %}
 
