@@ -25,6 +25,11 @@ CARDS_DIR    = PIDEX_DATA_DIR / "cards_subset"
 RAW_CARDS_DIR = PIDEX_DATA_DIR / "cards"
 PENDING_DIR  = _SCRIPTS_DIR / "pending"
 
+# ---------------------------------------------------------------------------
+# Thumbnail settings
+# ---------------------------------------------------------------------------
+THUMB_SIZE    = (150, 210)   # width × height in pixels
+THUMB_SUFFIX  = "_thumb.webp"
 
 # ---------------------------------------------------------------------------
 # Filters
@@ -100,6 +105,66 @@ def download_all(targets: list[tuple[str, Path]], workers: int = 10) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Thumbnail generation
+# ---------------------------------------------------------------------------
+
+def generate_thumbnail(src: Path, dest: Path | None = None) -> bool:
+    """
+    Generate a WebP thumbnail from a source image file.
+
+    The thumbnail is saved at THUMB_SIZE (150×210px) using high-quality
+    Lanczos resampling. If dest is not provided, the thumbnail is saved
+    alongside the source with a _thumb.webp suffix.
+
+    Skips generation if the thumbnail already exists.
+    Returns True on success, False on failure.
+    """
+    from PIL import Image
+
+    if dest is None:
+        dest = src.with_name(src.stem + THUMB_SUFFIX)
+
+    if dest.exists():
+        return True
+
+    try:
+        with Image.open(src) as img:
+            img = img.convert("RGBA")
+            img.thumbnail(THUMB_SIZE, Image.LANCZOS)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            img.save(dest, "WEBP", quality=85)
+        return True
+    except Exception as exc:
+        print(f"    [WARN] Could not generate thumbnail for {src}: {exc}")
+        return False
+
+
+def generate_thumbnails_all(
+    targets: list[tuple[Path, Path | None]],
+    workers: int = 8,
+) -> None:
+    """
+    Generate thumbnails for a list of (src, dest) pairs concurrently.
+    Pass dest=None to use the default _thumb.webp naming alongside src.
+    Skips any thumbnail that already exists.
+    """
+    pending = [
+        (src, dest) for src, dest in targets
+        if src.exists() and not (dest or src.with_name(src.stem + THUMB_SUFFIX)).exists()
+    ]
+    if not pending:
+        return
+    print(f"  Generating {len(pending)} thumbnails...")
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(generate_thumbnail, src, dest): src
+            for src, dest in pending
+        }
+        for future in as_completed(futures):
+            future.result()
+
+
+# ---------------------------------------------------------------------------
 # Image target builders
 # ---------------------------------------------------------------------------
 
@@ -120,6 +185,16 @@ def card_image_targets(set_id: str, cards_data: list[dict]) -> list[tuple[str, P
         if img_small := entry.get("images", {}).get("small"):
             raw_number = entry.get("number", entry["id"])
             targets.append((img_small, CARD_IMAGE_DIR / set_id / f"{raw_number}.png"))
+    return targets
+
+
+def card_thumbnail_targets(set_id: str, cards_data: list[dict]) -> list[tuple[Path, None]]:
+    """Return (src, None) pairs for thumbnail generation for all cards in a set."""
+    targets = []
+    for entry in cards_data:
+        raw_number = entry.get("number", entry["id"])
+        src = CARD_IMAGE_DIR / set_id / f"{raw_number}.png"
+        targets.append((src, None))
     return targets
 
 
