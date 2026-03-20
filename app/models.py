@@ -85,6 +85,9 @@ class Pokemon(db.Model):
     card_pokedex_numbers = db.relationship(
         "CardPokedexNumber", back_populates="pokemon"
     )
+    collection_pokemon = db.relationship(
+        "CollectionPokemon", back_populates="pokemon"
+    )
     slots = db.relationship("Slot", back_populates="pokemon")
 
 
@@ -102,7 +105,7 @@ class Card(db.Model):
     resolution images, which are fetched on demand rather than stored 
     locally.
 
-    Ownership status (WANTED / OWNED) is tracked in the Collection 
+    Ownership status (owned/wanted) is tracked in the CardStatus
     table, not on the Card itself.
 
     Attributes:
@@ -151,8 +154,11 @@ class Card(db.Model):
     pokedex_numbers = db.relationship(
         "CardPokedexNumber", back_populates="card"
     )
-    collection_entry = db.relationship(
-        "Collection", back_populates="card", uselist=False
+    card_status = db.relationship(
+        "CardStatus", back_populates="card", uselist=False
+    )
+    collection_cards = db.relationship(
+        "CollectionCard", back_populates="card"
     )
     slots = db.relationship(
         "Slot", back_populates="card", foreign_keys="Slot.card_id"
@@ -245,35 +251,112 @@ class CardPokedexNumber(db.Model):
     )
 
 
-class Collection(db.Model):
+class CardStatus(db.Model):
     """
-    Tracks the ownership status of a card in the user's collection.
-
-    A card exists in the Collection table once it has been marked as
-    either WANTED or OWNED. Cards not present in this table are
-    considered available (in the database) but not yet tracked.
-
-    copies_owned is only relevant when status is OWNED. It allows the
-    app to accurately report ownership when the same card appears in
-    multiple binders — e.g. a Scyther card in both a Gen 1 binder and
-    a Scyther binder.
+    Tracks owned/wanted status of a card independently.
 
     Attributes:
         card_id (str): Foreign key to the Card. Primary key.
-        status (str): Ownership status. One of "WANTED" or "OWNED".
-        copies_owned (int): Number of physical copies owned. Defaults
-            to 1. Only meaningful when status is "OWNED".
+        owned (bool): Whether the user owns this card.
+        wanted (bool): Whether the user wants this card.
     """
 
-    __tablename__ = "collection"
+    __tablename__ = "card_status"
 
     card_id = db.Column(
         db.String, db.ForeignKey("cards.id"), primary_key=True
     )
-    status = db.Column(db.String, nullable=False)
-    copies_owned = db.Column(db.Integer, nullable=False, default=1)
+    owned = db.Column(db.Boolean, nullable=False, default=False)
+    wanted = db.Column(db.Boolean, nullable=False, default=False)
 
-    card = db.relationship("Card", back_populates="collection_entry")
+    card = db.relationship("Card", back_populates="card_status")
+
+
+class Collection(db.Model):
+    """
+    A named group of cards with optional date and constraint filters.
+
+    Attributes:
+        id (str): Collection identifier, e.g. "classic".
+        name (str): Display name.
+        mode (str): Collection mode, e.g. "pokemon", "set".
+        date_from (date): Optional start date filter for sets.
+        date_to (date): Optional end date filter for sets.
+    """
+
+    __tablename__ = "collections"
+
+    id = db.Column(db.String, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    mode = db.Column(db.String, nullable=False)
+    date_from = db.Column(db.Date, nullable=True)
+    date_to = db.Column(db.Date, nullable=True)
+
+    collection_pokemon = db.relationship(
+        "CollectionPokemon", back_populates="collection"
+    )
+    collection_rarities = db.relationship(
+        "CollectionRarity", back_populates="collection"
+    )
+    collection_cards = db.relationship(
+        "CollectionCard", back_populates="collection"
+    )
+
+
+class CollectionPokemon(db.Model):
+    """Links a collection to the Pokémon it covers."""
+
+    __tablename__ = "collection_pokemon"
+
+    collection_id = db.Column(
+        db.String, db.ForeignKey("collections.id"), primary_key=True
+    )
+    pokedex_number = db.Column(
+        db.Integer, db.ForeignKey("pokemon.id"), primary_key=True
+    )
+
+    collection = db.relationship(
+        "Collection", back_populates="collection_pokemon"
+    )
+    pokemon = db.relationship(
+        "Pokemon", back_populates="collection_pokemon"
+    )
+
+
+class CollectionRarity(db.Model):
+    """Links a collection to the normalised rarities it includes."""
+
+    __tablename__ = "collection_rarities"
+
+    collection_id = db.Column(
+        db.String, db.ForeignKey("collections.id"), primary_key=True
+    )
+    norm_rarity = db.Column(db.String, primary_key=True)
+
+    collection = db.relationship(
+        "Collection", back_populates="collection_rarities"
+    )
+
+
+class CollectionCard(db.Model):
+    """Tracks which cards belong to a collection."""
+
+    __tablename__ = "collection_cards"
+
+    collection_id = db.Column(
+        db.String, db.ForeignKey("collections.id"), primary_key=True
+    )
+    card_id = db.Column(
+        db.String, db.ForeignKey("cards.id"), primary_key=True
+    )
+    pokemon_id = db.Column(
+        db.Integer, db.ForeignKey("pokemon.id"), nullable=True
+    )
+
+    collection = db.relationship(
+        "Collection", back_populates="collection_cards"
+    )
+    card = db.relationship("Card", back_populates="collection_cards")
 
 
 class Binder(db.Model):
@@ -323,7 +406,7 @@ class Slot(db.Model):
 
     The card_id field holds the card currently occupying the slot.
     Ownership status is not stored on the slot — it is looked up from
-    the Collection table via the card's collection_entry relationship.
+    the CardStatus table via the card's card_status relationship.
 
     Position within the binder is stored as a float using fractional 
     indexing, allowing reordering by updating only a single row. When 
