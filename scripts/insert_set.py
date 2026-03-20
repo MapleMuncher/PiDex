@@ -9,7 +9,8 @@ from pathlib import Path
 from scripts.rarity import normalize_rarity
 from scripts.utils import (
     CARD_IMAGE_DIR, CARDS_DIR, PENDING_DIR, SETS_FILE,
-    card_image_targets, download_all, int_or_null,
+    card_image_targets, card_thumbnail_targets,
+    download_all, generate_thumbnails_all, int_or_null,
     set_image_targets, sq,
 )
 
@@ -122,6 +123,8 @@ def _download_images(set_id: str, set_meta: dict, cards_data: list[dict]) -> Non
     targets = set_image_targets(set_id, set_meta) + card_image_targets(set_id, cards_data)
     download_all(targets)
     print("  ✓ Images done")
+    generate_thumbnails_all(card_thumbnail_targets(set_id, cards_data))
+    print("  ✓ Thumbnails done")
 
 
 # ---------------------------------------------------------------------------

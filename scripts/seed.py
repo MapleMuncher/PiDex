@@ -10,7 +10,8 @@ from app.models import (
 from scripts.rarity import normalize_rarity
 from scripts.utils import (
     CARDS_DIR, POKEMON_FILE, SETS_FILE,
-    card_image_targets, download_all, set_image_targets,
+    card_image_targets, card_thumbnail_targets,
+    download_all, generate_thumbnails_all, set_image_targets,
 )
 
 # ---------------------------------------------------------------------------
@@ -146,6 +147,7 @@ def seed_cards() -> None:
 
         db.session.commit()
         download_all(card_image_targets(set_id, cards_data))
+        generate_thumbnails_all(card_thumbnail_targets(set_id, cards_data))
 
     print(f"  ✓ {total} cards total")
 
