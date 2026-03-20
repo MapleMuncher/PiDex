@@ -33,6 +33,8 @@ def detail(pokedex_number):
     set_id       = request.args.get("set_id", "").strip() or None
     series       = request.args.get("series", "").strip() or None
     rarity       = request.args.get("rarity", "").strip() or None
+    evo_line_raw = request.args.get("evo_line", "").strip()
+    evo_line     = int(evo_line_raw) if evo_line_raw.isdigit() else None
     owned        = "owned" in request.args
     wanted       = "wanted" in request.args
     status_match = request.args.get("status_match", "any")
@@ -49,6 +51,14 @@ def detail(pokedex_number):
         .where(CardPokedexNumber.pokedex_number == pokedex_number)
     )
     has_set_join = False
+
+    if evo_line:
+        evo_line_card_ids = (
+            db.select(CardPokedexNumber.card_id)
+            .join(Pokemon, CardPokedexNumber.pokedex_number == Pokemon.id)
+            .where(Pokemon.evo_line == evo_line)
+        )
+        query = query.where(Card.id.in_(evo_line_card_ids))
 
     if set_id:
         query = query.where(Card.set_code == set_id)
@@ -127,10 +137,12 @@ def detail(pokedex_number):
         all_sets=all_sets,
         all_series=all_series,
         all_rarities=all_rarities,
+        all_evo_lines=[],
         sort_options=[(k, v[0]) for k, v in SORT_OPTIONS.items()],
         current_set_id=set_id,
         current_series=series,
         current_rarity=rarity,
+        current_evo_line=evo_line,
         current_owned=owned,
         current_wanted=wanted,
         current_status_match=status_match,

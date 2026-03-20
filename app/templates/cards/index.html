@@ -18,6 +18,7 @@
 {% set filter_action    = url_for('cards.index') %}
 {% set filter_reset_url = url_for('cards.index') %}
 {% set show_pokemon     = true %}
+{% set show_evo_line    = true %}
 {% include '_filter_bar.html' %}
 
 {# ------------------------------------------------------------------ #}
@@ -37,6 +38,7 @@
       series=current_series or '',
       rarity=current_rarity or '',
       pokemon=current_pokemon or '',
+      evo_line=current_evo_line or None,
       sort=current_sort,
       owned='1' if current_owned else None,
       wanted='1' if current_wanted else None,
