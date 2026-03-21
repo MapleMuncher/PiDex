@@ -3,7 +3,7 @@ from sqlalchemy import distinct, func
 
 from app import db
 from app.models import Card, CardPokedexNumber, CardStatus, Pokemon, Set
-from app.sorting import DEFAULT_SORT, SORT_OPTIONS, apply_sort
+from app.sorting import DEFAULT_SORT, SORT_OPTIONS, VALID_GROUP_BY, apply_sort
 
 
 pokemon_bp = Blueprint("pokemon", __name__, url_prefix="/pokemon")
@@ -40,6 +40,12 @@ def detail(pokedex_number):
     status_match = request.args.get("status_match", "any")
     if status_match not in ("any", "all"):
         status_match = "any"
+    untracked    = "untracked" in request.args
+
+    group_by = request.args.get("group_by", "").strip() or None
+    if group_by not in VALID_GROUP_BY:
+        group_by = None
+
     sort = request.args.get("sort", DEFAULT_SORT)
     if sort not in SORT_OPTIONS:
         sort = DEFAULT_SORT
@@ -83,7 +89,19 @@ def detail(pokedex_number):
     elif wanted:
         query = query.join(CardStatus, Card.id == CardStatus.card_id).where(CardStatus.wanted == True)
 
-    query = apply_sort(query, sort, has_set_join=has_set_join, has_pokemon_join=False)
+    if untracked:
+        tracked_pokemon = (
+            db.select(CardPokedexNumber.pokedex_number).distinct()
+            .join(CardStatus, CardPokedexNumber.card_id == CardStatus.card_id)
+            .where(db.or_(CardStatus.owned == True, CardStatus.wanted == True))
+        )
+        tracked_cards = (
+            db.select(CardPokedexNumber.card_id)
+            .where(CardPokedexNumber.pokedex_number.in_(tracked_pokemon))
+        )
+        query = query.where(Card.id.not_in(tracked_cards))
+
+    query = apply_sort(query, sort, has_set_join=has_set_join, has_pokemon_join=False, group_by=group_by)
     cards = db.session.execute(query).scalars().all()
 
     # Status map
@@ -92,6 +110,10 @@ def detail(pokedex_number):
         db.select(CardStatus).where(CardStatus.card_id.in_(card_ids))
     ).scalars().all()
     status_map = {s.card_id: s for s in status_rows}
+
+    # Compute groups
+    from app.routes.cards import _compute_groups
+    card_groups = _compute_groups(cards, group_by, status_map)
 
     # Filter options — scoped to this pokemon's cards only
     pokemon_set_codes = db.select(Card.set_code).distinct().join(
@@ -133,12 +155,14 @@ def detail(pokedex_number):
         "pokemon/detail.html",
         pokemon=pokemon,
         cards=cards,
+        card_groups=card_groups,
         status_map=status_map,
         all_sets=all_sets,
         all_series=all_series,
         all_rarities=all_rarities,
         all_evo_lines=[],
         sort_options=[(k, v[0]) for k, v in SORT_OPTIONS.items()],
+        group_by_options=[("", "No grouping"), ("evo_line", "Evolution line"), ("generation", "Generation"), ("rarity", "Rarity")],
         current_set_id=set_id,
         current_series=series,
         current_rarity=rarity,
@@ -146,5 +170,7 @@ def detail(pokedex_number):
         current_owned=owned,
         current_wanted=wanted,
         current_status_match=status_match,
+        current_untracked=untracked,
+        current_group_by=group_by,
         current_sort=sort,
     )

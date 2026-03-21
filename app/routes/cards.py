@@ -6,14 +6,14 @@ from sqlalchemy.orm import aliased
 
 from app import db
 from app.models import Card, CardPokedexNumber, CardStatus, Pokemon, Set
-from app.sorting import DEFAULT_SORT, SORT_OPTIONS, apply_sort, needs_set_join
+from app.sorting import DEFAULT_SORT, SORT_OPTIONS, VALID_GROUP_BY, apply_sort, needs_set_join
 
 cards_bp = Blueprint("cards", __name__, url_prefix="/cards")
 
 CARDS_PER_PAGE = 30
 
 
-def _base_query(set_id=None, series=None, rarity=None, pokemon=None, evo_line=None, owned=False, wanted=False, status_match="any"):
+def _base_query(set_id=None, series=None, rarity=None, pokemon=None, evo_line=None, owned=False, wanted=False, status_match="any", untracked=False):
     """Build a filtered Card query. Sorting is applied separately via apply_sort()."""
     query = db.select(Card)
     has_set_join     = False
@@ -71,7 +71,84 @@ def _base_query(set_id=None, series=None, rarity=None, pokemon=None, evo_line=No
             .where(CardStatus.wanted == True)
         )
 
+    if untracked:
+        # Pokémon that have at least one card marked owned or wanted
+        tracked_pokemon = (
+            db.select(CardPokedexNumber.pokedex_number).distinct()
+            .join(CardStatus, CardPokedexNumber.card_id == CardStatus.card_id)
+            .where(db.or_(CardStatus.owned == True, CardStatus.wanted == True))
+        )
+        # Cards that feature any tracked Pokémon
+        tracked_cards = (
+            db.select(CardPokedexNumber.card_id)
+            .where(CardPokedexNumber.pokedex_number.in_(tracked_pokemon))
+        )
+        query = query.where(Card.id.not_in(tracked_cards))
+
     return query, has_set_join, has_pokemon_join
+
+
+def _compute_groups(cards, group_by, status_map):
+    """Group paginated cards by the specified field.
+
+    Returns [(label, [cards]), ...].  When group_by is falsy the entire
+    list is returned as a single group with label ``None``.
+    """
+    if not cards or not group_by:
+        return [(None, list(cards))]
+
+    card_ids = [c.id for c in cards]
+
+    if group_by == "rarity":
+        label_for = {c.id: c.norm_rarity or "Unknown" for c in cards}
+    else:
+        # Need Pokémon info (evo_line or generation)
+        primary_sq = (
+            db.select(
+                CardPokedexNumber.card_id,
+                func.min(CardPokedexNumber.pokedex_number).label("primary_dex"),
+            )
+            .where(CardPokedexNumber.card_id.in_(card_ids))
+            .group_by(CardPokedexNumber.card_id)
+            .subquery()
+        )
+        if group_by == "evo_line":
+            BasePokemon = aliased(Pokemon)
+            rows = db.session.execute(
+                db.select(primary_sq.c.card_id, BasePokemon.name, Pokemon.evo_line)
+                .join(Pokemon, Pokemon.id == primary_sq.c.primary_dex)
+                .outerjoin(BasePokemon, BasePokemon.id == Pokemon.evo_line)
+            ).all()
+            label_for = {
+                r.card_id: f"{r.name}-line" if r.name else "Unknown"
+                for r in rows
+            }
+        else:  # generation
+            rows = db.session.execute(
+                db.select(primary_sq.c.card_id, Pokemon.generation)
+                .join(Pokemon, Pokemon.id == primary_sq.c.primary_dex)
+            ).all()
+            label_for = {
+                r.card_id: f"Generation {r.generation}" if r.generation else "Unknown"
+                for r in rows
+            }
+
+    # Build ordered groups — cards are already sorted, so detect boundaries
+    groups = []
+    current_label = None
+    current_cards = []
+    for card in cards:
+        label = label_for.get(card.id, "Unknown")
+        if label != current_label:
+            if current_cards:
+                groups.append((current_label, current_cards))
+            current_label = label
+            current_cards = [card]
+        else:
+            current_cards.append(card)
+    if current_cards:
+        groups.append((current_label, current_cards))
+    return groups
 
 
 @cards_bp.route("/")
@@ -88,13 +165,19 @@ def index():
     status_match = request.args.get("status_match", "any")
     if status_match not in ("any", "all"):
         status_match = "any"
+    untracked    = "untracked" in request.args
+
+    group_by = request.args.get("group_by", "").strip() or None
+    if group_by not in VALID_GROUP_BY:
+        group_by = None
+
     sort    = request.args.get("sort", DEFAULT_SORT)
     if sort not in SORT_OPTIONS:
         sort = DEFAULT_SORT
     page    = request.args.get("page", 1, type=int)
 
-    query, has_set_join, has_pokemon_join = _base_query(set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, evo_line=evo_line, owned=owned, wanted=wanted, status_match=status_match)
-    query               = apply_sort(query, sort, has_set_join=has_set_join, has_pokemon_join=has_pokemon_join)
+    query, has_set_join, has_pokemon_join = _base_query(set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, evo_line=evo_line, owned=owned, wanted=wanted, status_match=status_match, untracked=untracked)
+    query               = apply_sort(query, sort, has_set_join=has_set_join, has_pokemon_join=has_pokemon_join, group_by=group_by)
     pagination          = db.paginate(query, page=page, per_page=CARDS_PER_PAGE, error_out=False)
     cards               = pagination.items
 
@@ -104,6 +187,9 @@ def index():
         db.select(CardStatus).where(CardStatus.card_id.in_(card_ids))
     ).scalars().all()
     status_map  = {s.card_id: s for s in status_rows}
+
+    # Compute groups
+    card_groups = _compute_groups(cards, group_by, status_map)
 
     # Filter options
     sets_query = (
@@ -163,12 +249,14 @@ def index():
         "cards/index.html",
         cards_pagination=pagination,
         cards=cards,
+        card_groups=card_groups,
         status_map=status_map,
         all_sets=all_sets,
         all_series=all_series,
         all_rarities=all_rarities,
         all_evo_lines=all_evo_lines,
         sort_options=[(k, v[0]) for k, v in SORT_OPTIONS.items()],
+        group_by_options=[("", "No grouping"), ("evo_line", "Evolution line"), ("generation", "Generation"), ("rarity", "Rarity")],
         current_set_id=set_id,
         current_series=series,
         current_rarity=rarity,
@@ -177,6 +265,8 @@ def index():
         current_owned=owned,
         current_wanted=wanted,
         current_status_match=status_match,
+        current_untracked=untracked,
+        current_group_by=group_by,
         current_sort=sort,
     )
 

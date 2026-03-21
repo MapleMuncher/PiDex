@@ -6,7 +6,7 @@ from sqlalchemy.orm import aliased
 
 from app import db
 from app.models import Card, CardPokedexNumber, CardStatus, Pokemon, Set
-from app.sorting import DEFAULT_SORT, SORT_OPTIONS, apply_sort
+from app.sorting import DEFAULT_SORT, SORT_OPTIONS, VALID_GROUP_BY, apply_sort
 
 sets_bp = Blueprint("sets", __name__, url_prefix="/sets")
 
@@ -153,6 +153,8 @@ def index():
 @sets_bp.route("/<set_id>")
 def detail(set_id):
     """Show all cards in a set with filtering and sorting."""
+    from app.routes.cards import _compute_groups
+
     set_obj = db.get_or_404(Set, set_id)
 
     # Filter/sort params
@@ -165,6 +167,12 @@ def detail(set_id):
     status_match = request.args.get("status_match", "any")
     if status_match not in ("any", "all"):
         status_match = "any"
+    untracked    = "untracked" in request.args
+
+    group_by = request.args.get("group_by", "").strip() or None
+    if group_by not in VALID_GROUP_BY:
+        group_by = None
+
     sort = request.args.get("sort", DEFAULT_SORT)
     if sort not in SORT_OPTIONS:
         sort = DEFAULT_SORT
@@ -205,7 +213,19 @@ def detail(set_id):
     elif wanted:
         query = query.join(CardStatus, Card.id == CardStatus.card_id).where(CardStatus.wanted == True)
 
-    query = apply_sort(query, sort, has_set_join=False, has_pokemon_join=has_pokemon_join)
+    if untracked:
+        tracked_pokemon = (
+            db.select(CardPokedexNumber.pokedex_number).distinct()
+            .join(CardStatus, CardPokedexNumber.card_id == CardStatus.card_id)
+            .where(db.or_(CardStatus.owned == True, CardStatus.wanted == True))
+        )
+        tracked_cards = (
+            db.select(CardPokedexNumber.card_id)
+            .where(CardPokedexNumber.pokedex_number.in_(tracked_pokemon))
+        )
+        query = query.where(Card.id.not_in(tracked_cards))
+
+    query = apply_sort(query, sort, has_set_join=False, has_pokemon_join=has_pokemon_join, group_by=group_by)
     cards = db.session.execute(query).scalars().all()
 
     # Status map
@@ -214,6 +234,9 @@ def detail(set_id):
         db.select(CardStatus).where(CardStatus.card_id.in_(card_ids))
     ).scalars().all()
     status_map = {s.card_id: s for s in status_rows}
+
+    # Compute groups
+    card_groups = _compute_groups(cards, group_by, status_map)
 
     # Filter options scoped to this set
     set_card_ids = db.select(Card.id).where(Card.set_code == set_id)
@@ -259,12 +282,14 @@ def detail(set_id):
         "sets/detail.html",
         set=set_obj,
         cards=cards,
+        card_groups=card_groups,
         status_map=status_map,
         all_sets=[],
         all_series=[],
         all_rarities=all_rarities,
         all_evo_lines=all_evo_lines,
         sort_options=[(k, v[0]) for k, v in SORT_OPTIONS.items()],
+        group_by_options=[("", "No grouping"), ("evo_line", "Evolution line"), ("generation", "Generation"), ("rarity", "Rarity")],
         current_set_id=None,
         current_series=None,
         current_rarity=rarity,
@@ -273,5 +298,7 @@ def detail(set_id):
         current_owned=owned,
         current_wanted=wanted,
         current_status_match=status_match,
+        current_untracked=untracked,
+        current_group_by=group_by,
         current_sort=sort,
     )

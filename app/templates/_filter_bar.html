@@ -12,7 +12,7 @@
      current_pokemon, current_owned, current_wanted, current_status_match, current_sort
    ====================================================================== #}
 
-{% set any_filter = current_set_id or current_series or current_rarity or current_evo_line or current_owned or current_wanted or (show_pokemon and current_pokemon) %}
+{% set any_filter = current_set_id or current_series or current_rarity or current_evo_line or current_owned or current_wanted or (current_untracked is defined and current_untracked) or (current_group_by is defined and current_group_by) or (show_pokemon and current_pokemon) %}
 
 <form method="get" action="{{ filter_action }}" class="mb-4">
   <div class="card">
@@ -199,6 +199,13 @@
               <label class="btn btn-sm btn-outline-warning" for="filter-wanted">
                 <i class="bi bi-star-fill me-1"></i>Wanted
               </label>
+              <input class="btn-check" type="checkbox" name="untracked" id="filter-untracked" autocomplete="off"
+                     {% if current_untracked %}checked{% endif %}
+                     onchange="this.form.submit()">
+              <label class="btn btn-sm btn-outline-info" for="filter-untracked"
+                     title="Show only cards for Pokémon with no owned or wanted cards">
+                <i class="bi bi-question-diamond me-1"></i>Untracked
+              </label>
               {% if current_owned and current_wanted %}
               <div class="btn-group btn-group-sm" role="group">
                 <button type="submit" name="status_match" value="any"
@@ -215,7 +222,7 @@
           </div>
         </div>
 
-        {# Row 4: Sort by #}
+        {# Row 4: Sort by & Group by #}
         <div class="row g-2 mb-2">
           <div class="col-12 col-sm-6 col-lg-4">
             <label class="form-label small fw-semibold mb-1">Sort by</label>
@@ -227,6 +234,18 @@
               {% endfor %}
             </select>
           </div>
+          {% if group_by_options is defined %}
+          <div class="col-12 col-sm-6 col-lg-4">
+            <label class="form-label small fw-semibold mb-1">Group by</label>
+            <select name="group_by" class="form-select form-select-sm" onchange="this.form.submit()">
+              {% for key, label in group_by_options %}
+                <option value="{{ key }}" {% if key == current_group_by %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
         </div>
 
         {# Row 5: Reset filters #}

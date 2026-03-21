@@ -25,13 +25,18 @@
 {# Card grid                                                            #}
 {# ------------------------------------------------------------------ #}
 {% if cards %}
-  <div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 row-cols-xl-10 g-2">
-    {% for card in cards %}
-      <div class="col">
-        {{ card_thumbnail(card, status_map.get(card.id)) }}
-      </div>
-    {% endfor %}
-  </div>
+  {% for group_label, group_cards in card_groups %}
+    {% if group_label %}
+      <h5 class="mt-4 mb-2">{{ group_label }}</h5>
+    {% endif %}
+    <div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 row-cols-xl-10 g-2 {% if group_label %}mb-3{% endif %}">
+      {% for card in group_cards %}
+        <div class="col">
+          {{ card_thumbnail(card, status_map.get(card.id)) }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endfor %}
 
   {{ pagination(cards_pagination, 'cards.index',
       set_id=current_set_id or '',
@@ -42,7 +47,9 @@
       sort=current_sort,
       owned='1' if current_owned else None,
       wanted='1' if current_wanted else None,
-      status_match=current_status_match if (current_owned and current_wanted) else None) }}
+      status_match=current_status_match if (current_owned and current_wanted) else None,
+      untracked='1' if current_untracked else None,
+      group_by=current_group_by or None) }}
 
 {% else %}
   <div class="text-center py-5 text-muted">
