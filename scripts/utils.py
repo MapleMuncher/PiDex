@@ -1,6 +1,7 @@
 """
 Shared utilities for seed.py, curate_set.py, and insert_set.py.
 """
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -12,7 +13,8 @@ import requests
 _SCRIPTS_DIR = Path(__file__).parent          # pidex/scripts/
 _PROJECT_DIR = _SCRIPTS_DIR.parent            # pidex/
 
-PIDEX_DATA_DIR = _PROJECT_DIR.parent / "PiDexData"
+# Override with PIDEX_DATA env var if set; defaults to a sibling PiDexData/
+PIDEX_DATA_DIR = Path(os.environ.get("PIDEX_DATA", _PROJECT_DIR.parent / "PiDexData"))
 
 IMAGE_DIR      = _PROJECT_DIR / "images"
 CARD_IMAGE_DIR = IMAGE_DIR / "cards"
