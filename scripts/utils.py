@@ -38,7 +38,14 @@ THUMB_SUFFIX  = "_thumb.webp"
 # ---------------------------------------------------------------------------
 
 # Normalised rarities allowed through the rarity filter
-ALLOWED_RARITIES = {"Common", "Uncommon", "Rare", "Double Rare", "Holo Rare"}
+ALLOWED_RARITIES = {"Common", "Uncommon", "Rare", "Double Rare", "Holo Rare", "Promo"}
+
+# Card supertypes that cause a card to be excluded from the curated set
+BLOCKED_SUPERTYPES = {"Trainer", "Energy"}
+
+# Subtypes that cause a card to be excluded from the curated set
+BLOCKED_SUBTYPES = {"MEGA", "Tera", "Ancient", "Future", "Ultra Beast",
+                    "Eternamax", "VMAX", "BREAK", "V-Union", "TAG TEAM"}
 
 # Pokédex numbers allowed through the Pokédex filter
 _POKEDEX_FILTER: set[int] = (
@@ -67,6 +74,16 @@ _POKEDEX_FILTER: set[int] = (
 def passes_rarity_filter(norm_rarity: str | None) -> bool:
     """Return True if the normalised rarity is in the allowed set."""
     return norm_rarity in ALLOWED_RARITIES
+
+
+def passes_supertype_filter(supertypes: list[str]) -> bool:
+    """Return True if the card has none of the blocked supertypes."""
+    return not any(s in BLOCKED_SUPERTYPES for s in supertypes)
+
+
+def passes_subtype_filter(subtypes: list[str]) -> bool:
+    """Return True if the card has none of the blocked subtypes."""
+    return not any(s in BLOCKED_SUBTYPES for s in subtypes)
 
 
 def passes_pokedex_filter(pokedex_numbers: list[int]) -> bool:

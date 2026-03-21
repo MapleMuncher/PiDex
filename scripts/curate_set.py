@@ -5,7 +5,8 @@ import sys
 from scripts.rarity import normalize_rarity
 from scripts.utils import (
     CARDS_DIR, RAW_CARDS_DIR,
-    passes_pokedex_filter, passes_rarity_filter,
+    passes_pokedex_filter, passes_rarity_filter, passes_subtype_filter,
+    passes_supertype_filter,
 )
 
 
@@ -45,21 +46,33 @@ def main() -> None:
 
     # Apply filters
     passed: list[dict] = []
+    skipped_supertype = 0
+    skipped_subtype = 0
     skipped_rarity = 0
     skipped_pokedex = 0
 
     for entry in raw_cards:
         rarity_raw  = entry.get("rarity") or ""
+        supertype   = entry.get("supertype", "")
+        subtypes    = entry.get("subtypes", [])
+        dex_numbers = entry.get("nationalPokedexNumbers", [])
         norm        = normalize_rarity(rarity_raw) if rarity_raw else None
         norm_rarity = norm.name if norm else None
-        dex_numbers = entry.get("nationalPokedexNumbers", [])
 
-        if not passes_rarity_filter(norm_rarity):
-            skipped_rarity += 1
+        if not passes_supertype_filter(supertype):
+            skipped_supertype += 1
+            continue
+
+        if not passes_subtype_filter(subtypes):
+            skipped_subtype += 1
             continue
 
         if not passes_pokedex_filter(dex_numbers):
             skipped_pokedex += 1
+            continue
+
+        if not passes_rarity_filter(norm_rarity):
+            skipped_rarity += 1
             continue
 
         passed.append(entry)
@@ -70,7 +83,7 @@ def main() -> None:
         json.dump(passed, f, indent=2, ensure_ascii=False)
 
     print(f"  ✓ {len(passed)} cards passed filters")
-    print(f"  Skipped: {skipped_rarity} rarity, {skipped_pokedex} Pokédex")
+    print(f"  Skipped: {skipped_supertype} supertype, {skipped_subtype} subtype, {skipped_pokedex} Pokédex, {skipped_rarity} rarity")
     print(f"  Written to {dest}")
     print(f"\nReview the output file and make any manual adjustments, then run:")
     print(f"  python -m scripts.insert_set --set {set_id}")
