@@ -41,7 +41,7 @@ THUMB_SUFFIX  = "_thumb.webp"
 ALLOWED_RARITIES = {"Common", "Uncommon", "Rare", "Double Rare", "Holo Rare", "Promo"}
 
 # Card supertypes that cause a card to be excluded from the curated set
-BLOCKED_SUPERTYPES = {"Trainer", "Energy"}
+ALLOWED_SUPERTYPES = {"Pokémon"}
 
 # Subtypes that cause a card to be excluded from the curated set
 BLOCKED_SUBTYPES = {"MEGA", "Tera", "Ancient", "Future", "Ultra Beast",
@@ -76,9 +76,9 @@ def passes_rarity_filter(norm_rarity: str | None) -> bool:
     return norm_rarity in ALLOWED_RARITIES
 
 
-def passes_supertype_filter(supertypes: list[str]) -> bool:
-    """Return True if the card has none of the blocked supertypes."""
-    return not any(s in BLOCKED_SUPERTYPES for s in supertypes)
+def passes_supertype_filter(supertype: str) -> bool:
+    """Return True if the supertype is in the allowed set."""
+    return supertype in ALLOWED_SUPERTYPES
 
 
 def passes_subtype_filter(subtypes: list[str]) -> bool:
