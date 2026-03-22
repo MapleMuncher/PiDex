@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Pokémon{% endblock %}
+
+{% block extra_css %}
+<style>
+  .pokemon-card {
+    color: inherit;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .pokemon-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .pokemon-dex {
+    font-size: 0.78rem;
+    color: #adb5bd;
+    font-weight: 600;
+  }
+
+  .pokemon-name {
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .pokemon-stat {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .pokemon-card .card-body {
+    padding: 0.75rem 1rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header d-flex align-items-start justify-content-between flex-wrap gap-2">
+  <div>
+    <h1>Pokémon</h1>
+    <p>{{ pokemon_data | length }} Pokémon</p>
+  </div>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+
+    {# Count toggle #}
+    <div class="btn-group btn-group-sm" role="group" aria-label="Count mode">
+      <a href="{{ url_for('pokemon.index', count='all') }}"
+         class="btn {{ 'btn-secondary' if count == 'all' else 'btn-outline-secondary' }}">
+        All
+      </a>
+      <a href="{{ url_for('pokemon.index', count='tracked') }}"
+         class="btn {{ 'btn-secondary' if count == 'tracked' else 'btn-outline-secondary' }}">
+        Collected
+      </a>
+    </div>
+
+  </div>
+</div>
+
+{% if pokemon_data %}
+<div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
+  {% for p in pokemon_data %}
+  <div class="col">
+    <a href="{{ url_for('pokemon.detail', pokedex_number=p.id) }}"
+       class="card h-100 text-decoration-none pokemon-card">
+      <div class="card-body text-center">
+        <div class="pokemon-dex">#{{ '%03d' % p.id }}</div>
+        <div class="pokemon-name mb-2">{{ p.name }}</div>
+        <div class="d-flex justify-content-center gap-3">
+          <span class="pokemon-stat text-success">
+            <i class="bi bi-check-lg me-1"></i>{{ p.owned }}
+          </span>
+          <span class="pokemon-stat text-warning">
+            <i class="bi bi-star-fill me-1"></i>{{ p.wanted_only }}
+          </span>
+        </div>
+        <div class="text-muted small mt-1">{{ p.total }} card{{ 's' if p.total != 1 }}</div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-search fs-1 d-block mb-3"></i>
+  <p class="mb-1">No Pokémon found.</p>
+  {% if count == 'tracked' %}
+  <a href="{{ url_for('pokemon.index', count='all') }}" class="btn btn-outline-secondary btn-sm mt-2">
+    Show all Pokémon
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

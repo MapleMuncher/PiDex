@@ -6,9 +6,9 @@
 {% block content %}
 
 <div class="mb-3">
-  <a href="{{ request.referrer or url_for('cards.index') }}"
+  <a href="{{ url_for('pokemon.index') }}"
      class="text-muted small">
-    <i class="bi bi-arrow-left me-1"></i>Back
+    <i class="bi bi-arrow-left me-1"></i>Back to Pokémon
   </a>
 </div>
 

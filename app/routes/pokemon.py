@@ -1,5 +1,8 @@
+from collections import defaultdict
+
 from flask import Blueprint, jsonify, render_template, request
-from sqlalchemy import distinct, func
+from sqlalchemy import case, distinct, func
+from sqlalchemy.orm import aliased
 
 from app import db
 from app.models import Card, CardPokedexNumber, CardStatus, Pokemon, Set
@@ -7,6 +10,72 @@ from app.sorting import DEFAULT_SORT, SORT_OPTIONS, VALID_GROUP_BY, apply_sort
 
 
 pokemon_bp = Blueprint("pokemon", __name__, url_prefix="/pokemon")
+
+
+@pokemon_bp.route("/")
+def index():
+    """Browse all Pokémon with card counts."""
+    count = request.args.get("count", "tracked")
+    if count not in ("all", "tracked"):
+        count = "tracked"
+
+    owned_expr = func.sum(
+        case((CardStatus.owned == True, 1), else_=0)
+    ).label("owned_count")
+
+    wanted_only_expr = func.sum(
+        case(
+            (db.and_(CardStatus.wanted == True, CardStatus.owned != True), 1),
+            else_=0,
+        )
+    ).label("wanted_only_count")
+
+    total_expr = func.count(distinct(Card.id)).label("total_cards")
+
+    rows = db.session.execute(
+        db.select(
+            Pokemon.id,
+            Pokemon.name,
+            Pokemon.type_1,
+            Pokemon.type_2,
+            Pokemon.generation,
+            Pokemon.evo_line,
+            owned_expr,
+            wanted_only_expr,
+            total_expr,
+        )
+        .join(CardPokedexNumber, Pokemon.id == CardPokedexNumber.pokedex_number)
+        .join(Card, Card.id == CardPokedexNumber.card_id)
+        .outerjoin(CardStatus, CardStatus.card_id == Card.id)
+        .group_by(Pokemon.id)
+        .order_by(Pokemon.id)
+    ).all()
+
+    pokemon_data = []
+    for row in rows:
+        owned = row.owned_count or 0
+        wanted_only = row.wanted_only_count or 0
+        total = row.total_cards or 0
+
+        if count == "tracked" and owned == 0 and wanted_only == 0:
+            continue
+
+        pokemon_data.append({
+            "id": row.id,
+            "name": row.name,
+            "type_1": row.type_1,
+            "type_2": row.type_2,
+            "generation": row.generation,
+            "owned": owned,
+            "wanted_only": wanted_only,
+            "total": total,
+        })
+
+    return render_template(
+        "pokemon/index.html",
+        count=count,
+        pokemon_data=pokemon_data,
+    )
 
 
 @pokemon_bp.route("/search")
@@ -27,14 +96,15 @@ def search():
 @pokemon_bp.route("/<int:pokedex_number>")
 def detail(pokedex_number):
     """Show all cards featuring a specific Pokémon, with filtering and sorting."""
+    from app.routes.cards import _compute_groups, _parse_multi, _parse_multi_int, _all_pokemon_options
+
     pokemon = db.get_or_404(Pokemon, pokedex_number)
 
-    # Filter/sort params
-    set_id       = request.args.get("set_id", "").strip() or None
-    series       = request.args.get("series", "").strip() or None
-    rarity       = request.args.get("rarity", "").strip() or None
-    evo_line_raw = request.args.get("evo_line", "").strip()
-    evo_line     = int(evo_line_raw) if evo_line_raw.isdigit() else None
+    # Filter/sort params (multi-value)
+    set_ids      = _parse_multi(request.args.get("set_id", ""))
+    series_list  = _parse_multi(request.args.get("series", ""))
+    rarities     = _parse_multi(request.args.get("rarity", ""))
+    evo_lines    = _parse_multi_int(request.args.get("evo_line", ""))
     owned        = "owned" in request.args
     wanted       = "wanted" in request.args
     status_match = request.args.get("status_match", "any")
@@ -58,24 +128,24 @@ def detail(pokedex_number):
     )
     has_set_join = False
 
-    if evo_line:
+    if evo_lines:
         evo_line_card_ids = (
             db.select(CardPokedexNumber.card_id)
             .join(Pokemon, CardPokedexNumber.pokedex_number == Pokemon.id)
-            .where(Pokemon.evo_line == evo_line)
+            .where(Pokemon.evo_line.in_(evo_lines))
         )
         query = query.where(Card.id.in_(evo_line_card_ids))
 
-    if set_id:
-        query = query.where(Card.set_code == set_id)
+    if set_ids:
+        query = query.where(Card.set_code.in_(set_ids))
 
-    if series:
+    if series_list:
         query = query.join(Set, Card.set_code == Set.id)
-        query = query.where(Set.series_name == series)
+        query = query.where(Set.series_name.in_(series_list))
         has_set_join = True
 
-    if rarity:
-        query = query.where(Card.norm_rarity == rarity)
+    if rarities:
+        query = query.where(Card.norm_rarity.in_(rarities))
 
     if owned and wanted:
         condition = (
@@ -112,7 +182,6 @@ def detail(pokedex_number):
     status_map = {s.card_id: s for s in status_rows}
 
     # Compute groups
-    from app.routes.cards import _compute_groups
     card_groups = _compute_groups(cards, group_by, status_map)
 
     # Filter options — scoped to this pokemon's cards only
@@ -125,8 +194,8 @@ def detail(pokedex_number):
         .where(Set.id.in_(pokemon_set_codes))
         .order_by(Set.release_date.desc())
     )
-    if series:
-        sets_query = sets_query.where(Set.series_name == series)
+    if series_list:
+        sets_query = sets_query.where(Set.series_name.in_(series_list))
     all_sets = db.session.execute(sets_query).scalars().all()
 
     series_rows = db.session.execute(
@@ -161,12 +230,14 @@ def detail(pokedex_number):
         all_series=all_series,
         all_rarities=all_rarities,
         all_evo_lines=[],
+        all_pokemon=[],
         sort_options=[(k, v[0]) for k, v in SORT_OPTIONS.items()],
         group_by_options=[("", "No grouping"), ("evo_line", "Evolution line"), ("generation", "Generation"), ("rarity", "Rarity")],
-        current_set_id=set_id,
-        current_series=series,
-        current_rarity=rarity,
-        current_evo_line=evo_line,
+        current_set_ids=set_ids,
+        current_series=series_list,
+        current_rarities=rarities,
+        current_pokemon_ids=[],
+        current_evo_lines=evo_lines,
         current_owned=owned,
         current_wanted=wanted,
         current_status_match=status_match,

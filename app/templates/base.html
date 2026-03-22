@@ -345,31 +345,36 @@
     }
 
     /* ------------------------------------------------------------------ */
-    /* Set searchable dropdown                                               */
+    /* Multi-select searchable dropdown                                     */
     /* ------------------------------------------------------------------ */
-    .set-dropdown {
+    .ms-dropdown {
       position: relative;
     }
 
-    .set-dropdown-trigger {
+    .ms-dropdown-trigger {
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 4px;
       user-select: none;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
     }
 
-    .set-dropdown-trigger .ms-auto {
-      margin-left: auto !important;
+    .ms-dropdown-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .set-dropdown-panel {
+    .ms-dropdown-panel {
       position: absolute;
       top: 100%;
       left: 0;
       min-width: 100%;
       width: max-content;
-      max-width: 320px;
+      max-width: 340px;
       background: var(--pidex-white);
       border: 1px solid var(--pidex-border);
       border-radius: 6px;
@@ -378,12 +383,12 @@
       margin-top: 2px;
     }
 
-    .set-dropdown-list {
+    .ms-dropdown-list {
       max-height: 260px;
       overflow-y: auto;
     }
 
-    .set-dropdown-item {
+    .ms-dropdown-item {
       padding: 5px 12px;
       cursor: pointer;
       font-size: 0.875rem;
@@ -392,44 +397,23 @@
       gap: 8px;
     }
 
-    .set-dropdown-item:hover,
-    .set-dropdown-item.active {
+    .ms-dropdown-item:hover {
       background-color: var(--pidex-teal-light);
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Autocomplete dropdown                                                 */
-    /* ------------------------------------------------------------------ */
-    .autocomplete-dropdown {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: var(--pidex-white);
-      border: 1px solid var(--pidex-border);
-      border-top: none;
-      border-radius: 0 0 6px 6px;
-      z-index: 1050;
-      max-height: 220px;
-      overflow-y: auto;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .autocomplete-item {
-      padding: 5px 10px;
+    .ms-dropdown-item .form-check-input {
+      flex-shrink: 0;
       cursor: pointer;
-      font-size: 0.875rem;
     }
 
-    .autocomplete-item:hover {
-      background-color: var(--pidex-teal-light);
+    .ms-dropdown-item .ms-dropdown-text {
+      flex: 1;
+      min-width: 0;
     }
 
-    .autocomplete-dex {
-      color: var(--bs-secondary);
-      font-size: 0.78rem;
-      min-width: 38px;
-      display: inline-block;
+    .ms-dropdown-all {
+      border-bottom: 1px solid var(--pidex-border);
+      font-weight: 600;
     }
 
     /* ------------------------------------------------------------------ */
@@ -507,6 +491,13 @@
             <a class="nav-link {% if request.blueprint == 'sets' %}active{% endif %}"
                href="{{ url_for('sets.index') }}">
               <i class="bi bi-collection me-1"></i>Sets
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link {% if request.blueprint == 'pokemon' and request.endpoint == 'pokemon.index' %}active{% endif %}"
+               href="{{ url_for('pokemon.index') }}">
+              <i class="bi bi-trophy me-1"></i>Pokémon
             </a>
           </li>
 
@@ -589,63 +580,132 @@
     })();
 
     // ----------------------------------------------------------------
-    // Searchable dropdown (shared by set and evo-line dropdowns)
+    // Multi-select searchable dropdown
     // ----------------------------------------------------------------
-    function initSearchableDropdown(ids) {
-      const trigger = document.getElementById(ids.trigger);
-      const panel   = document.getElementById(ids.panel);
-      const search  = document.getElementById(ids.search);
-      const list    = document.getElementById(ids.list);
-      const hidden  = document.getElementById(ids.hidden);
-      const wrapper = document.getElementById(ids.wrapper);
-      if (!trigger) return;
+    document.querySelectorAll('.ms-dropdown').forEach(function (el) {
+      const trigger  = el.querySelector('.ms-dropdown-trigger');
+      const panel    = el.querySelector('.ms-dropdown-panel');
+      const search   = panel ? panel.querySelector('.ms-dropdown-search') : null;
+      const list     = el.querySelector('.ms-dropdown-list');
+      const hidden   = el.querySelector('input[type="hidden"]');
+      const labelEl  = el.querySelector('.ms-dropdown-label');
+      const allItem  = el.querySelector('.ms-dropdown-all');
+      const placeholder = el.dataset.placeholder || 'All';
+      if (!trigger || !panel || !list || !hidden) return;
 
-      trigger.addEventListener('click', () => {
+      const form = hidden.form;
+
+      // Open / close panel
+      trigger.addEventListener('click', function () {
+        // Close all other open panels first
+        document.querySelectorAll('.ms-dropdown-panel:not(.d-none)').forEach(function (p) {
+          if (p !== panel) p.classList.add('d-none');
+        });
         panel.classList.toggle('d-none');
-        if (!panel.classList.contains('d-none')) {
+        if (!panel.classList.contains('d-none') && search) {
           search.value = '';
-          filterList('');
+          filterItems('');
           search.focus();
         }
       });
 
-      trigger.addEventListener('keydown', e => {
+      trigger.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trigger.click(); }
       });
 
-      search.addEventListener('input', () => filterList(search.value.trim().toLowerCase()));
-
-      function filterList(q) {
-        list.querySelectorAll('.set-dropdown-item').forEach(item => {
-          const label = item.dataset.label.toLowerCase();
-          const extra = (item.dataset.search || '').toLowerCase();
-          item.style.display = (!q || label.includes(q) || extra.includes(q)) ? '' : 'none';
+      // Search filter
+      if (search) {
+        search.addEventListener('input', function () {
+          filterItems(this.value.trim().toLowerCase());
         });
       }
 
-      list.addEventListener('click', e => {
-        const item = e.target.closest('.set-dropdown-item');
+      function filterItems(q) {
+        list.querySelectorAll('.ms-dropdown-item:not(.ms-dropdown-all)').forEach(function (item) {
+          var text = item.querySelector('.ms-dropdown-text').textContent.toLowerCase();
+          var extra = (item.dataset.search || '').toLowerCase();
+          item.style.display = (!q || text.includes(q) || extra.includes(q)) ? '' : 'none';
+        });
+      }
+
+      // Click handling
+      list.addEventListener('click', function (e) {
+        var item = e.target.closest('.ms-dropdown-item');
         if (!item) return;
-        hidden.value = item.dataset.value;
-        panel.classList.add('d-none');
-        hidden.form.submit();
+
+        var checkbox = item.querySelector('.ms-dropdown-check');
+        var isCheckboxClick = (e.target === checkbox || e.target.classList.contains('ms-dropdown-check'));
+
+        if (item.classList.contains('ms-dropdown-all')) {
+          // Select All toggle
+          var shouldCheck = !checkbox.checked;
+          if (!isCheckboxClick) checkbox.checked = shouldCheck;
+          list.querySelectorAll('.ms-dropdown-item:not(.ms-dropdown-all) .ms-dropdown-check').forEach(function (cb) {
+            // Only toggle visible items
+            if (cb.closest('.ms-dropdown-item').style.display !== 'none') {
+              cb.checked = shouldCheck;
+            }
+          });
+          updateHidden();
+          return;
+        }
+
+        if (isCheckboxClick) {
+          // Checkbox click — just toggle, update hidden, don't submit
+          updateHidden();
+        } else {
+          // Text click — select only this item and submit immediately
+          list.querySelectorAll('.ms-dropdown-check').forEach(function (cb) { cb.checked = false; });
+          checkbox.checked = true;
+          updateHidden();
+          form.submit();
+        }
       });
 
-      document.addEventListener('click', e => {
-        if (!wrapper.contains(e.target)) panel.classList.add('d-none');
+      function updateHidden() {
+        var selected = [];
+        list.querySelectorAll('.ms-dropdown-item:not(.ms-dropdown-all)').forEach(function (item) {
+          if (item.querySelector('.ms-dropdown-check').checked) {
+            selected.push(item.dataset.value);
+          }
+        });
+        hidden.value = selected.join(',');
+        updateLabel(selected);
+        updateSelectAll();
+      }
+
+      function updateLabel(selected) {
+        if (selected.length === 0) {
+          labelEl.textContent = placeholder;
+          labelEl.classList.add('text-muted');
+        } else if (selected.length === 1) {
+          var item = list.querySelector('[data-value="' + CSS.escape(selected[0]) + '"]');
+          labelEl.textContent = item ? item.querySelector('.ms-dropdown-text').textContent.trim() : selected[0];
+          labelEl.classList.remove('text-muted');
+        } else {
+          labelEl.textContent = selected.length + ' selected';
+          labelEl.classList.remove('text-muted');
+        }
+      }
+
+      function updateSelectAll() {
+        if (!allItem) return;
+        var total = list.querySelectorAll('.ms-dropdown-item:not(.ms-dropdown-all)').length;
+        var checked = list.querySelectorAll('.ms-dropdown-item:not(.ms-dropdown-all) .ms-dropdown-check:checked').length;
+        allItem.querySelector('.ms-dropdown-check').checked = (checked === total && total > 0);
+      }
+
+      // Close on outside click
+      document.addEventListener('click', function (e) {
+        if (!el.contains(e.target)) panel.classList.add('d-none');
       });
-    }
 
-    initSearchableDropdown({
-      trigger: 'set-dropdown-trigger', panel: 'set-dropdown-panel',
-      search:  'set-search',           list:  'set-list',
-      hidden:  'set-id-input',         wrapper: 'set-dropdown',
-    });
-
-    initSearchableDropdown({
-      trigger: 'evo-dropdown-trigger', panel: 'evo-dropdown-panel',
-      search:  'evo-search',           list:  'evo-list',
-      hidden:  'evo-id-input',         wrapper: 'evo-dropdown',
+      // Initialize label from current hidden value
+      var initialValues = hidden.value ? hidden.value.split(',').filter(function (v) { return v; }) : [];
+      if (initialValues.length > 0) {
+        updateLabel(initialValues);
+        updateSelectAll();
+      }
     });
 
     // ----------------------------------------------------------------

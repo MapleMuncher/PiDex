@@ -1,5 +1,5 @@
 {# ======================================================================
-   _filter_bar.html — reusable filter pane
+   _filter_bar.html — reusable filter pane with multi-select dropdowns
 
    Required context variables (set before including):
      filter_action    — URL for the form action
@@ -7,14 +7,16 @@
      show_pokemon     — boolean, whether to show the Pokémon field
 
    Also requires these template variables from the route:
-     all_sets, all_series, all_rarities, all_evo_lines, sort_options
-     current_set_id, current_series, current_rarity, current_evo_line
-     current_pokemon, current_owned, current_wanted, current_status_match, current_sort
+     all_sets, all_series, all_rarities, all_evo_lines, all_pokemon
+     sort_options
+     current_set_ids, current_series, current_rarities, current_evo_lines
+     current_pokemon_ids, current_owned, current_wanted, current_status_match
+     current_sort
    ====================================================================== #}
 
-{% set any_filter = current_set_id or current_series or current_rarity or current_evo_line or current_owned or current_wanted or (current_untracked is defined and current_untracked) or (current_group_by is defined and current_group_by) or (show_pokemon and current_pokemon) %}
+{% set any_filter = current_set_ids or current_series or current_rarities or current_evo_lines or current_owned or current_wanted or (current_untracked is defined and current_untracked) or (current_group_by is defined and current_group_by) or (show_pokemon and current_pokemon_ids) %}
 
-<form method="get" action="{{ filter_action }}" class="mb-4">
+<form method="get" action="{{ filter_action }}" id="filter-form" class="mb-4">
   <div class="card">
 
     {# Collapsible header #}
@@ -41,45 +43,55 @@
           {% if show_series is not defined or show_series %}
           <div class="col-12 col-sm-6 col-lg-4">
             <label class="form-label small fw-semibold mb-1">Series</label>
-            <select name="series" class="form-select form-select-sm" onchange="this.form.submit()">
-              <option value="">All series</option>
-              {% for series_name, year in all_series %}
-                <option value="{{ series_name }}" {% if series_name == current_series %}selected{% endif %}>
-                  {{ series_name }}{% if year %} ({{ year }}){% endif %}
-                </option>
-              {% endfor %}
-            </select>
+            <div class="ms-dropdown" data-placeholder="All series">
+              <div class="form-select form-select-sm ms-dropdown-trigger" tabindex="0">
+                <span class="ms-dropdown-label text-muted">All series</span>
+              </div>
+              <input type="hidden" name="series" value="{{ current_series | join(',') if current_series else '' }}">
+              <div class="ms-dropdown-panel d-none">
+                <div class="p-2 border-bottom">
+                  <input type="text" class="form-control form-control-sm ms-dropdown-search" placeholder="Search series…" autocomplete="off">
+                </div>
+                <ul class="ms-dropdown-list list-unstyled mb-0">
+                  <li class="ms-dropdown-item ms-dropdown-all" data-value="__all__">
+                    <input type="checkbox" class="form-check-input me-2 ms-dropdown-check">
+                    <span class="ms-dropdown-text">Select all</span>
+                  </li>
+                  {% for series_name, year in all_series %}
+                    <li class="ms-dropdown-item" data-value="{{ series_name }}">
+                      <input type="checkbox" class="form-check-input me-2 ms-dropdown-check"
+                             {% if series_name in current_series %}checked{% endif %}>
+                      <span class="ms-dropdown-text">{{ series_name }}{% if year %} ({{ year }}){% endif %}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
           </div>
           {% endif %}
 
           {% if show_set is not defined or show_set %}
           <div class="col-12 col-sm-6 col-lg-4">
             <label class="form-label small fw-semibold mb-1">Set</label>
-            {% set current_set_obj = all_sets | selectattr('id', 'equalto', current_set_id) | first if current_set_id else None %}
-            <input type="hidden" name="set_id" id="set-id-input" value="{{ current_set_id or '' }}">
-            <div class="set-dropdown" id="set-dropdown">
-              <div class="form-select form-select-sm set-dropdown-trigger" id="set-dropdown-trigger" tabindex="0">
-                {% if current_set_obj %}
-                  <span>{{ current_set_obj.name }}</span>
-                  <span class="text-muted ms-1 small">{{ current_set_obj.release_date.strftime('%b %Y') if current_set_obj.release_date }}</span>
-                {% else %}
-                  <span class="text-muted">All sets</span>
-                {% endif %}
+            <div class="ms-dropdown" data-placeholder="All sets">
+              <div class="form-select form-select-sm ms-dropdown-trigger" tabindex="0">
+                <span class="ms-dropdown-label text-muted">All sets</span>
               </div>
-              <div class="set-dropdown-panel d-none" id="set-dropdown-panel">
+              <input type="hidden" name="set_id" value="{{ current_set_ids | join(',') if current_set_ids else '' }}">
+              <div class="ms-dropdown-panel d-none">
                 <div class="p-2 border-bottom">
-                  <input type="text" class="form-control form-control-sm" id="set-search"
-                         placeholder="Search sets…" autocomplete="off">
+                  <input type="text" class="form-control form-control-sm ms-dropdown-search" placeholder="Search sets…" autocomplete="off">
                 </div>
-                <ul class="set-dropdown-list list-unstyled mb-0" id="set-list">
-                  <li class="set-dropdown-item" data-value="" data-label="All sets">
-                    <span class="text-muted">All sets</span>
+                <ul class="ms-dropdown-list list-unstyled mb-0">
+                  <li class="ms-dropdown-item ms-dropdown-all" data-value="__all__">
+                    <input type="checkbox" class="form-check-input me-2 ms-dropdown-check">
+                    <span class="ms-dropdown-text">Select all</span>
                   </li>
                   {% for s in all_sets %}
-                    <li class="set-dropdown-item {% if s.id == current_set_id %}active{% endif %}"
-                        data-value="{{ s.id }}"
-                        data-label="{{ s.name }}">
-                      <span>{{ s.name }}</span>
+                    <li class="ms-dropdown-item" data-value="{{ s.id }}">
+                      <input type="checkbox" class="form-check-input me-2 ms-dropdown-check"
+                             {% if s.id in current_set_ids %}checked{% endif %}>
+                      <span class="ms-dropdown-text">{{ s.name }}</span>
                       {% if s.release_date %}
                         <span class="text-muted small ms-auto">{{ s.release_date.strftime('%b %Y') }}</span>
                       {% endif %}
@@ -93,14 +105,30 @@
 
           <div class="col-12 col-sm-6 col-lg-4">
             <label class="form-label small fw-semibold mb-1">Rarity</label>
-            <select name="rarity" class="form-select form-select-sm" onchange="this.form.submit()">
-              <option value="">All rarities</option>
-              {% for r in all_rarities %}
-                <option value="{{ r }}" {% if r == current_rarity %}selected{% endif %}>
-                  {{ r }}
-                </option>
-              {% endfor %}
-            </select>
+            <div class="ms-dropdown" data-placeholder="All rarities">
+              <div class="form-select form-select-sm ms-dropdown-trigger" tabindex="0">
+                <span class="ms-dropdown-label text-muted">All rarities</span>
+              </div>
+              <input type="hidden" name="rarity" value="{{ current_rarities | join(',') if current_rarities else '' }}">
+              <div class="ms-dropdown-panel d-none">
+                <div class="p-2 border-bottom">
+                  <input type="text" class="form-control form-control-sm ms-dropdown-search" placeholder="Search rarities…" autocomplete="off">
+                </div>
+                <ul class="ms-dropdown-list list-unstyled mb-0">
+                  <li class="ms-dropdown-item ms-dropdown-all" data-value="__all__">
+                    <input type="checkbox" class="form-check-input me-2 ms-dropdown-check">
+                    <span class="ms-dropdown-text">Select all</span>
+                  </li>
+                  {% for r in all_rarities %}
+                    <li class="ms-dropdown-item" data-value="{{ r }}">
+                      <input type="checkbox" class="form-check-input me-2 ms-dropdown-check"
+                             {% if r in current_rarities %}checked{% endif %}>
+                      <span class="ms-dropdown-text">{{ r }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -111,31 +139,25 @@
 
           <div class="col-12 col-sm-6 col-lg-4">
             <label class="form-label small fw-semibold mb-1">Evolution line</label>
-            {% set current_evo_obj = all_evo_lines | selectattr('0', 'equalto', current_evo_line) | first if current_evo_line else None %}
-            <input type="hidden" name="evo_line" id="evo-id-input" value="{{ current_evo_line or '' }}">
-            <div class="set-dropdown" id="evo-dropdown">
-              <div class="form-select form-select-sm set-dropdown-trigger" id="evo-dropdown-trigger" tabindex="0">
-                {% if current_evo_obj %}
-                  <span>#{{ '%03d' % current_evo_obj[0] }} {{ current_evo_obj[1] }}-line</span>
-                {% else %}
-                  <span class="text-muted">All evolution lines</span>
-                {% endif %}
+            <div class="ms-dropdown" data-placeholder="All evolution lines">
+              <div class="form-select form-select-sm ms-dropdown-trigger" tabindex="0">
+                <span class="ms-dropdown-label text-muted">All evolution lines</span>
               </div>
-              <div class="set-dropdown-panel d-none" id="evo-dropdown-panel">
+              <input type="hidden" name="evo_line" value="{{ current_evo_lines | join(',') if current_evo_lines else '' }}">
+              <div class="ms-dropdown-panel d-none">
                 <div class="p-2 border-bottom">
-                  <input type="text" class="form-control form-control-sm" id="evo-search"
-                         placeholder="Search Pokémon or line…" autocomplete="off">
+                  <input type="text" class="form-control form-control-sm ms-dropdown-search" placeholder="Search Pokémon or line…" autocomplete="off">
                 </div>
-                <ul class="set-dropdown-list list-unstyled mb-0" id="evo-list">
-                  <li class="set-dropdown-item" data-value="" data-label="All evolution lines" data-search="">
-                    <span class="text-muted">All evolution lines</span>
+                <ul class="ms-dropdown-list list-unstyled mb-0">
+                  <li class="ms-dropdown-item ms-dropdown-all" data-value="__all__">
+                    <input type="checkbox" class="form-check-input me-2 ms-dropdown-check">
+                    <span class="ms-dropdown-text">Select all</span>
                   </li>
                   {% for evo_id, evo_name, evo_search in all_evo_lines %}
-                    <li class="set-dropdown-item {% if evo_id == current_evo_line %}active{% endif %}"
-                        data-value="{{ evo_id }}"
-                        data-label="#{{ '%03d' % evo_id }} {{ evo_name }}-line"
-                        data-search="{{ evo_search }}">
-                      <span>#{{ '%03d' % evo_id }} {{ evo_name }}-line</span>
+                    <li class="ms-dropdown-item" data-value="{{ evo_id }}" data-search="{{ evo_search }}">
+                      <input type="checkbox" class="form-check-input me-2 ms-dropdown-check"
+                             {% if evo_id in current_evo_lines %}checked{% endif %}>
+                      <span class="ms-dropdown-text">#{{ '%03d' % evo_id }} {{ evo_name }}-line</span>
                     </li>
                   {% endfor %}
                 </ul>
@@ -146,16 +168,29 @@
           {% if show_pokemon %}
           <div class="col-12 col-sm-6 col-lg-4">
             <label class="form-label small fw-semibold mb-1">Pokémon</label>
-            <div class="position-relative">
-              <input
-                type="text"
-                name="pokemon"
-                id="pokemon-input"
-                class="form-control form-control-sm"
-                placeholder="Search Pokémon…"
-                value="{{ current_pokemon or '' }}"
-                autocomplete="off">
-              <ul id="pokemon-suggestions" class="autocomplete-dropdown list-unstyled mb-0 d-none"></ul>
+            <div class="ms-dropdown" data-placeholder="All Pokémon">
+              <div class="form-select form-select-sm ms-dropdown-trigger" tabindex="0">
+                <span class="ms-dropdown-label text-muted">All Pokémon</span>
+              </div>
+              <input type="hidden" name="pokemon" value="{{ current_pokemon_ids | join(',') if current_pokemon_ids else '' }}">
+              <div class="ms-dropdown-panel d-none">
+                <div class="p-2 border-bottom">
+                  <input type="text" class="form-control form-control-sm ms-dropdown-search" placeholder="Search Pokémon…" autocomplete="off">
+                </div>
+                <ul class="ms-dropdown-list list-unstyled mb-0">
+                  <li class="ms-dropdown-item ms-dropdown-all" data-value="__all__">
+                    <input type="checkbox" class="form-check-input me-2 ms-dropdown-check">
+                    <span class="ms-dropdown-text">Select all</span>
+                  </li>
+                  {% for p_id, p_name in all_pokemon %}
+                    <li class="ms-dropdown-item" data-value="{{ p_id }}">
+                      <input type="checkbox" class="form-check-input me-2 ms-dropdown-check"
+                             {% if p_id in current_pokemon_ids %}checked{% endif %}>
+                      <span class="ms-dropdown-text">#{{ '%03d' % p_id }} {{ p_name }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
             </div>
           </div>
           {% endif %}
@@ -166,16 +201,29 @@
         <div class="row g-2 mb-2">
           <div class="col-12 col-sm-6 col-lg-4">
             <label class="form-label small fw-semibold mb-1">Pokémon</label>
-            <div class="position-relative">
-              <input
-                type="text"
-                name="pokemon"
-                id="pokemon-input"
-                class="form-control form-control-sm"
-                placeholder="Search Pokémon…"
-                value="{{ current_pokemon or '' }}"
-                autocomplete="off">
-              <ul id="pokemon-suggestions" class="autocomplete-dropdown list-unstyled mb-0 d-none"></ul>
+            <div class="ms-dropdown" data-placeholder="All Pokémon">
+              <div class="form-select form-select-sm ms-dropdown-trigger" tabindex="0">
+                <span class="ms-dropdown-label text-muted">All Pokémon</span>
+              </div>
+              <input type="hidden" name="pokemon" value="{{ current_pokemon_ids | join(',') if current_pokemon_ids else '' }}">
+              <div class="ms-dropdown-panel d-none">
+                <div class="p-2 border-bottom">
+                  <input type="text" class="form-control form-control-sm ms-dropdown-search" placeholder="Search Pokémon…" autocomplete="off">
+                </div>
+                <ul class="ms-dropdown-list list-unstyled mb-0">
+                  <li class="ms-dropdown-item ms-dropdown-all" data-value="__all__">
+                    <input type="checkbox" class="form-check-input me-2 ms-dropdown-check">
+                    <span class="ms-dropdown-text">Select all</span>
+                  </li>
+                  {% for p_id, p_name in all_pokemon %}
+                    <li class="ms-dropdown-item" data-value="{{ p_id }}">
+                      <input type="checkbox" class="form-check-input me-2 ms-dropdown-check"
+                             {% if p_id in current_pokemon_ids %}checked{% endif %}>
+                      <span class="ms-dropdown-text">#{{ '%03d' % p_id }} {{ p_name }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
             </div>
           </div>
         </div>
@@ -248,16 +296,19 @@
           {% endif %}
         </div>
 
-        {# Row 5: Reset filters #}
-        {% if any_filter %}
+        {# Row 5: Apply + Reset filters #}
         <div class="row g-2">
-          <div class="col-12">
+          <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="bi bi-funnel me-1"></i>Apply filters
+            </button>
+            {% if any_filter %}
             <a href="{{ filter_reset_url }}" class="btn btn-outline-secondary btn-sm">
               <i class="bi bi-x-lg me-1"></i>Reset filters
             </a>
+            {% endif %}
           </div>
         </div>
-        {% endif %}
 
       </div>
     </div>

@@ -62,7 +62,6 @@ def _set_stats():
         wanted_only  = row.wanted_only_count or 0
 
         # Official-mode — 4 segments: owned | wanted | in-DB-untracked | not-in-DB
-        # Cap db_total to official range to avoid secret-rare inflation
         db_in_off          = min(db_total, off_total)
         off_untracked_db   = max(0, db_in_off - owned - wanted_only)
         off_not_in_db      = max(0, off_total - db_in_off)
@@ -153,15 +152,14 @@ def index():
 @sets_bp.route("/<set_id>")
 def detail(set_id):
     """Show all cards in a set with filtering and sorting."""
-    from app.routes.cards import _compute_groups
+    from app.routes.cards import _compute_groups, _parse_multi, _parse_multi_int, _all_pokemon_options
 
     set_obj = db.get_or_404(Set, set_id)
 
-    # Filter/sort params
-    rarity       = request.args.get("rarity", "").strip() or None
-    pokemon      = request.args.get("pokemon", "").strip() or None
-    evo_line_raw = request.args.get("evo_line", "").strip()
-    evo_line     = int(evo_line_raw) if evo_line_raw.isdigit() else None
+    # Filter/sort params (multi-value)
+    rarities     = _parse_multi(request.args.get("rarity", ""))
+    pokemon_ids  = _parse_multi_int(request.args.get("pokemon", ""))
+    evo_lines    = _parse_multi_int(request.args.get("evo_line", ""))
     owned        = "owned" in request.args
     wanted       = "wanted" in request.args
     status_match = request.args.get("status_match", "any")
@@ -181,25 +179,24 @@ def detail(set_id):
     query = db.select(Card).where(Card.set_code == set_id)
     has_pokemon_join = False
 
-    if pokemon:
+    if pokemon_ids:
         query = (
             query
             .join(CardPokedexNumber, Card.id == CardPokedexNumber.card_id)
-            .join(Pokemon, CardPokedexNumber.pokedex_number == Pokemon.id)
-            .where(Pokemon.name.ilike(f"%{pokemon}%"))
+            .where(CardPokedexNumber.pokedex_number.in_(pokemon_ids))
         )
         has_pokemon_join = True
 
-    if evo_line:
+    if evo_lines:
         evo_line_card_ids = (
             db.select(CardPokedexNumber.card_id)
             .join(Pokemon, CardPokedexNumber.pokedex_number == Pokemon.id)
-            .where(Pokemon.evo_line == evo_line)
+            .where(Pokemon.evo_line.in_(evo_lines))
         )
         query = query.where(Card.id.in_(evo_line_card_ids))
 
-    if rarity:
-        query = query.where(Card.norm_rarity == rarity)
+    if rarities:
+        query = query.where(Card.norm_rarity.in_(rarities))
 
     if owned and wanted:
         condition = (
@@ -278,6 +275,16 @@ def detail(set_id):
         for row in evo_line_rows
     ]
 
+    # Pokemon options scoped to this set
+    all_pokemon = db.session.execute(
+        db.select(Pokemon.id, Pokemon.name)
+        .where(Pokemon.id.in_(
+            db.select(CardPokedexNumber.pokedex_number).distinct()
+            .where(CardPokedexNumber.card_id.in_(set_card_ids))
+        ))
+        .order_by(Pokemon.id)
+    ).all()
+
     return render_template(
         "sets/detail.html",
         set=set_obj,
@@ -288,13 +295,14 @@ def detail(set_id):
         all_series=[],
         all_rarities=all_rarities,
         all_evo_lines=all_evo_lines,
+        all_pokemon=all_pokemon,
         sort_options=[(k, v[0]) for k, v in SORT_OPTIONS.items()],
         group_by_options=[("", "No grouping"), ("evo_line", "Evolution line"), ("generation", "Generation"), ("rarity", "Rarity")],
-        current_set_id=None,
-        current_series=None,
-        current_rarity=rarity,
-        current_pokemon=pokemon,
-        current_evo_line=evo_line,
+        current_set_ids=[],
+        current_series=[],
+        current_rarities=rarities,
+        current_pokemon_ids=pokemon_ids,
+        current_evo_lines=evo_lines,
         current_owned=owned,
         current_wanted=wanted,
         current_status_match=status_match,
