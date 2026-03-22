@@ -16,7 +16,8 @@ _PROJECT_DIR = _SCRIPTS_DIR.parent            # pidex/
 # Override with PIDEX_DATA env var if set; defaults to a sibling PiDexData/
 PIDEX_DATA_DIR = Path(os.environ.get("PIDEX_DATA", _PROJECT_DIR.parent / "PiDexData"))
 
-IMAGE_DIR      = _PROJECT_DIR / "images"
+# Override with PIDEX_IMAGE_DIR env var if set; defaults to images/ in project root
+IMAGE_DIR      = Path(os.environ.get("PIDEX_IMAGE_DIR", _PROJECT_DIR / "images"))
 CARD_IMAGE_DIR = IMAGE_DIR / "cards"
 SET_LOGO_DIR   = IMAGE_DIR / "sets" / "logos"
 SET_SYMBOL_DIR = IMAGE_DIR / "sets" / "symbols"
