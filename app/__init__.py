@@ -12,6 +12,7 @@ def create_app():
 
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///pidex.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -22,6 +23,7 @@ def create_app():
     from app.routes.binders import binders_bp
     from app.routes.sets import sets_bp
     from app.routes.pokemon import pokemon_bp
+    from app.routes.scraper import scraper_bp
 
     app.register_blueprint(home_bp)
     app.register_blueprint(cards_bp)
@@ -29,6 +31,7 @@ def create_app():
     app.register_blueprint(binders_bp)
     app.register_blueprint(sets_bp)
     app.register_blueprint(pokemon_bp)
+    app.register_blueprint(scraper_bp)
 
     with app.app_context():
         from app import models  # noqa: F401

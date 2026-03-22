@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Import card{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="bi bi-cloud-download me-2"></i>Import card</h1>
+  <p>Add a card by pasting its TCGCollector page URL.</p>
+</div>
+
+{# ------------------------------------------------------------------ #}
+{# URL input                                                            #}
+{# ------------------------------------------------------------------ #}
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="post" action="{{ url_for('scraper.add') }}">
+      <label for="url-input" class="form-label small fw-semibold mb-1">TCGCollector URL</label>
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+        <input
+          type="url"
+          name="url"
+          id="url-input"
+          class="form-control"
+          placeholder="https://www.tcgcollector.com/cards/…"
+          required
+          autofocus>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-plus-lg me-1"></i>Add card
+        </button>
+      </div>
+      <div class="form-text">
+        Example: <span class="text-muted">https://www.tcgcollector.com/cards/47215/flareon-scarlet-and-violet-promos-167</span>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ------------------------------------------------------------------ #}
+{# Imported cards list                                                  #}
+{# ------------------------------------------------------------------ #}
+<div class="d-flex align-items-center mb-3">
+  <h5 class="mb-0">Manually imported cards</h5>
+  {% if cards %}
+    <span class="badge bg-secondary ms-2">{{ cards | length }}</span>
+  {% endif %}
+</div>
+
+{% if cards %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:56px"></th>
+          <th>Name</th>
+          <th>Set</th>
+          <th>Number</th>
+          <th>Rarity</th>
+          <th style="width:48px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for card in cards %}
+        <tr>
+          <td class="text-center">
+            {% if card.image_url %}
+              <img
+                src="/images/cards/{{ card.set_code }}/{{ card.set_number }}_thumb.webp"
+                onerror="this.onerror=null;this.src='{{ card.image_url }}'"
+                alt="{{ card.name }}"
+                style="height:48px;width:auto;border-radius:5px;">
+            {% else %}
+              <div class="card-thumb-placeholder" style="height:48px;width:36px;font-size:1rem;border-radius:5px;"></div>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('cards.detail', card_id=card.id) }}" class="fw-semibold">
+              {{ card.name }}
+            </a>
+          </td>
+          <td>
+            <span>{{ card.set.name }}</span>
+            <span class="text-muted ms-1 small opacity-75">{{ card.set.code }}</span>
+          </td>
+          <td class="text-muted small">{{ card.set_number }}</td>
+          <td class="text-muted small">{{ card.norm_rarity or card.rarity or '—' }}</td>
+          <td>
+            <form method="post" action="{{ url_for('scraper.delete', card_id=card.id) }}"
+                  onsubmit="return confirm('Remove {{ card.name }} from the database?')">
+              <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-cloud-download fs-1 d-block mb-3 opacity-25"></i>
+    <p class="mb-0">No manually imported cards yet.</p>
+    <p class="small">Paste a TCGCollector URL above to get started.</p>
+  </div>
+{% endif %}
+
+{% endblock %}

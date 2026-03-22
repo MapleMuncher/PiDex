@@ -145,6 +145,7 @@ class Card(db.Model):
     image_url = db.Column(db.String, nullable=True)
     hd_image_url = db.Column(db.String, nullable=True)
     flavor = db.Column(db.String, nullable=True)
+    manually_added = db.Column(db.Boolean, nullable=False, server_default=db.false())
 
     set = db.relationship("Set", back_populates="cards")
     sub_types = db.relationship("CardSubType", back_populates="card")

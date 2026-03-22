@@ -515,6 +515,13 @@
             </a>
           </li>
 
+          <li class="nav-item">
+            <a class="nav-link {% if request.blueprint == 'scraper' %}active{% endif %}"
+               href="{{ url_for('scraper.index') }}">
+              <i class="bi bi-cloud-download me-1"></i>Import
+            </a>
+          </li>
+
         </ul>
       </div>
 

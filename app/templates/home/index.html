@@ -187,7 +187,7 @@
 
 {# Navigation tiles #}
 <p class="section-label">Browse</p>
-<div class="row g-3">
+<div class="row g-3 mb-4">
 
   <div class="col-12 col-sm-6 col-lg-3">
     <a href="{{ url_for('cards.index') }}" class="nav-tile">
@@ -226,6 +226,21 @@
       </div>
       <p class="nav-tile-title">Binders</p>
       <p class="nav-tile-desc">Organise your cards into custom binders.</p>
+    </a>
+  </div>
+
+</div>
+
+<p class="section-label">Manage</p>
+<div class="row g-3">
+
+  <div class="col-12 col-sm-6 col-lg-3">
+    <a href="{{ url_for('scraper.index') }}" class="nav-tile">
+      <div class="nav-tile-icon">
+        <i class="bi bi-cloud-download"></i>
+      </div>
+      <p class="nav-tile-title">Import card</p>
+      <p class="nav-tile-desc">Add a card by pasting its TCGCollector page URL.</p>
     </a>
   </div>
 
