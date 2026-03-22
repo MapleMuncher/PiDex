@@ -23,46 +23,6 @@
     font-size: 1rem;
   }
 
-  /* Stat cards */
-  .stat-card {
-    background: var(--pidex-white);
-    border: 1px solid var(--pidex-border);
-    border-radius: 12px;
-    padding: 1.25rem 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .stat-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    flex-shrink: 0;
-  }
-
-  .stat-icon-teal  { background-color: var(--pidex-teal-light); color: var(--pidex-teal); }
-  .stat-icon-green { background-color: #d1e7dd; color: #198754; }
-  .stat-icon-yellow { background-color: #fff3cd; color: #997404; }
-  .stat-icon-blue  { background-color: #cfe2ff; color: #0a58ca; }
-
-  .stat-value {
-    font-size: 1.6rem;
-    font-weight: 700;
-    line-height: 1.1;
-    color: #212529;
-  }
-
-  .stat-label {
-    font-size: 0.8rem;
-    color: #6c757d;
-    margin-top: 1px;
-  }
-
   /* Nav tiles */
   .nav-tile {
     display: flex;
@@ -130,59 +90,6 @@
 <div class="dashboard-hero">
   <h1>PiDex</h1>
   <p>Your Pokémon TCG collection, at a glance.</p>
-</div>
-
-{# Stats row #}
-<div class="row g-3 mb-5">
-
-  <div class="col-6 col-md-3">
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-green">
-        <i class="bi bi-check-circle"></i>
-      </div>
-      <div>
-        <div class="stat-value">{{ owned_count }}</div>
-        <div class="stat-label">Cards owned</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-6 col-md-3">
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-yellow">
-        <i class="bi bi-bookmark-heart"></i>
-      </div>
-      <div>
-        <div class="stat-value">{{ wanted_only_count }}</div>
-        <div class="stat-label">Cards wanted</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-6 col-md-3">
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-teal">
-        <i class="bi bi-collection"></i>
-      </div>
-      <div>
-        <div class="stat-value">{{ sets_with_cards }}</div>
-        <div class="stat-label">Sets in database</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-6 col-md-3">
-    <div class="stat-card">
-      <div class="stat-icon stat-icon-blue">
-        <i class="bi bi-grid"></i>
-      </div>
-      <div>
-        <div class="stat-value">{{ total_cards }}</div>
-        <div class="stat-label">Cards in database</div>
-      </div>
-    </div>
-  </div>
-
 </div>
 
 {# Navigation tiles #}
