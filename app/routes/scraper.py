@@ -54,8 +54,8 @@ def _download_image(image_url: str, set_id: str, set_number: str) -> None:
 
         thumb = dest.with_name(f"{set_number}_thumb.webp")
         generate_thumbnail(dest, thumb)
-    except Exception:
-        pass  # Image download is best-effort; the remote URL remains as fallback
+    except Exception as exc:
+        print(f"  [WARN] Image download failed for {set_id}/{set_number}: {exc}")
 
 
 @scraper_bp.route("/", methods=["GET"])
