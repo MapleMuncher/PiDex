@@ -44,6 +44,7 @@
       rarity=current_rarities|join(',') if current_rarities else '',
       pokemon=current_pokemon_ids|join(',') if current_pokemon_ids else '',
       evo_line=current_evo_lines|join(',') if current_evo_lines else '',
+      generation=current_generations|join(',') if current_generations else '',
       sort=current_sort,
       owned='1' if current_owned else None,
       wanted='1' if current_wanted else None,

@@ -160,6 +160,7 @@ def detail(set_id):
     rarities     = _parse_multi(request.args.get("rarity", ""))
     pokemon_ids  = _parse_multi_int(request.args.get("pokemon", ""))
     evo_lines    = _parse_multi_int(request.args.get("evo_line", ""))
+    generations  = _parse_multi_int(request.args.get("generation", ""))
     owned        = "owned" in request.args
     wanted       = "wanted" in request.args
     status_match = request.args.get("status_match", "any")
@@ -186,6 +187,14 @@ def detail(set_id):
             .where(CardPokedexNumber.pokedex_number.in_(pokemon_ids))
         )
         has_pokemon_join = True
+
+    if generations:
+        gen_card_ids = (
+            db.select(CardPokedexNumber.card_id)
+            .join(Pokemon, CardPokedexNumber.pokedex_number == Pokemon.id)
+            .where(Pokemon.generation.in_(generations))
+        )
+        query = query.where(Card.id.in_(gen_card_ids))
 
     if evo_lines:
         evo_line_card_ids = (
@@ -285,6 +294,17 @@ def detail(set_id):
         .order_by(Pokemon.id)
     ).all()
 
+    # Generations scoped to this set
+    all_generations = db.session.execute(
+        db.select(distinct(Pokemon.generation))
+        .where(Pokemon.generation.isnot(None))
+        .where(Pokemon.id.in_(
+            db.select(CardPokedexNumber.pokedex_number).distinct()
+            .where(CardPokedexNumber.card_id.in_(set_card_ids))
+        ))
+        .order_by(Pokemon.generation)
+    ).scalars().all()
+
     return render_template(
         "sets/detail.html",
         set=set_obj,
@@ -296,6 +316,7 @@ def detail(set_id):
         all_rarities=all_rarities,
         all_evo_lines=all_evo_lines,
         all_pokemon=all_pokemon,
+        all_generations=all_generations,
         sort_options=[(k, v[0]) for k, v in SORT_OPTIONS.items()],
         group_by_options=[("", "No grouping"), ("evo_line", "Evolution line"), ("generation", "Generation"), ("rarity", "Rarity")],
         current_set_ids=[],
@@ -303,6 +324,7 @@ def detail(set_id):
         current_rarities=rarities,
         current_pokemon_ids=pokemon_ids,
         current_evo_lines=evo_lines,
+        current_generations=generations,
         current_owned=owned,
         current_wanted=wanted,
         current_status_match=status_match,

@@ -31,6 +31,7 @@ def _base_query(
     rarities=None,
     pokemon_ids=None,
     evo_lines=None,
+    generations=None,
     owned=False,
     wanted=False,
     status_match="any",
@@ -48,6 +49,14 @@ def _base_query(
             .where(CardPokedexNumber.pokedex_number.in_(pokemon_ids))
         )
         has_pokemon_join = True
+
+    if generations:
+        gen_card_ids = (
+            db.select(CardPokedexNumber.card_id)
+            .join(Pokemon, CardPokedexNumber.pokedex_number == Pokemon.id)
+            .where(Pokemon.generation.in_(generations))
+        )
+        query = query.where(Card.id.in_(gen_card_ids))
 
     if evo_lines:
         evo_line_card_ids = (
@@ -187,6 +196,7 @@ def index():
     rarities     = _parse_multi(request.args.get("rarity", ""))
     pokemon_ids  = _parse_multi_int(request.args.get("pokemon", ""))
     evo_lines    = _parse_multi_int(request.args.get("evo_line", ""))
+    generations  = _parse_multi_int(request.args.get("generation", ""))
     owned        = "owned" in request.args
     wanted       = "wanted" in request.args
     status_match = request.args.get("status_match", "any")
@@ -205,7 +215,7 @@ def index():
 
     query, has_set_join, has_pokemon_join = _base_query(
         set_ids=set_ids, series_list=series_list, rarities=rarities,
-        pokemon_ids=pokemon_ids, evo_lines=evo_lines,
+        pokemon_ids=pokemon_ids, evo_lines=evo_lines, generations=generations,
         owned=owned, wanted=wanted, status_match=status_match, untracked=untracked,
     )
     query               = apply_sort(query, sort, has_set_join=has_set_join, has_pokemon_join=has_pokemon_join, group_by=group_by)
@@ -277,6 +287,13 @@ def index():
 
     all_pokemon = _all_pokemon_options()
 
+    all_generations = db.session.execute(
+        db.select(distinct(Pokemon.generation))
+        .where(Pokemon.generation.isnot(None))
+        .where(Pokemon.id.in_(db.select(CardPokedexNumber.pokedex_number).distinct()))
+        .order_by(Pokemon.generation)
+    ).scalars().all()
+
     return render_template(
         "cards/index.html",
         cards_pagination=pagination,
@@ -288,6 +305,7 @@ def index():
         all_rarities=all_rarities,
         all_evo_lines=all_evo_lines,
         all_pokemon=all_pokemon,
+        all_generations=all_generations,
         sort_options=[(k, v[0]) for k, v in SORT_OPTIONS.items()],
         group_by_options=[("", "No grouping"), ("evo_line", "Evolution line"), ("generation", "Generation"), ("rarity", "Rarity")],
         current_set_ids=set_ids,
@@ -295,6 +313,7 @@ def index():
         current_rarities=rarities,
         current_pokemon_ids=pokemon_ids,
         current_evo_lines=evo_lines,
+        current_generations=generations,
         current_owned=owned,
         current_wanted=wanted,
         current_status_match=status_match,

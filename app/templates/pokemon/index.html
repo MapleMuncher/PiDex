@@ -27,13 +27,15 @@
     line-height: 1.2;
   }
 
-  .pokemon-stat {
-    font-size: 0.8rem;
-    font-weight: 600;
-  }
-
   .pokemon-card .card-body {
     padding: 0.75rem 1rem;
+  }
+
+  .pokemon-progress {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #e9ecef;
+    overflow: hidden;
   }
 </style>
 {% endblock %}
@@ -62,29 +64,199 @@
   </div>
 </div>
 
-{% if pokemon_data %}
-<div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3">
-  {% for p in pokemon_data %}
-  <div class="col">
-    <a href="{{ url_for('pokemon.detail', pokedex_number=p.id) }}"
-       class="card h-100 text-decoration-none pokemon-card">
-      <div class="card-body text-center">
-        <div class="pokemon-dex">#{{ '%03d' % p.id }}</div>
-        <div class="pokemon-name mb-2">{{ p.name }}</div>
-        <div class="d-flex justify-content-center gap-3">
-          <span class="pokemon-stat text-success">
-            <i class="bi bi-check-lg me-1"></i>{{ p.owned }}
-          </span>
-          <span class="pokemon-stat text-warning">
-            <i class="bi bi-star-fill me-1"></i>{{ p.wanted_only }}
-          </span>
+{# ------------------------------------------------------------------ #}
+{# Filter bar                                                           #}
+{# ------------------------------------------------------------------ #}
+<form method="get" action="{{ url_for('pokemon.index') }}" id="filter-form" class="mb-4">
+  {# Preserve count mode #}
+  <input type="hidden" name="count" value="{{ count }}">
+  <div class="card">
+
+    <div class="card-header d-flex justify-content-between align-items-center py-2 px-3"
+         id="filter-toggle" role="button"
+         data-bs-toggle="collapse" data-bs-target="#filter-body"
+         aria-expanded="true" aria-controls="filter-body"
+         style="cursor:pointer">
+      <span class="fw-semibold small">
+        <i class="bi bi-funnel me-1"></i>Filters
+        {% if any_filter %}
+          <span class="badge bg-primary ms-1">Active</span>
+        {% endif %}
+      </span>
+      <i class="bi bi-chevron-up filter-chevron"></i>
+    </div>
+
+    <div class="collapse show" id="filter-body">
+      <div class="card-body p-3">
+
+        {# Row 1: Generation, Evolution line, Pokemon #}
+        <div class="row g-2 mb-2">
+
+          <div class="col-12 col-sm-6 col-lg-4">
+            <label class="form-label small fw-semibold mb-1">Generation</label>
+            <div class="ms-dropdown" data-placeholder="All generations">
+              <div class="form-select form-select-sm ms-dropdown-trigger" tabindex="0">
+                <span class="ms-dropdown-label text-muted">All generations</span>
+              </div>
+              <input type="hidden" name="generation" value="{{ current_generations | join(',') if current_generations else '' }}">
+              <div class="ms-dropdown-panel d-none">
+                <div class="p-2 border-bottom">
+                  <input type="text" class="form-control form-control-sm ms-dropdown-search" placeholder="Search generations…" autocomplete="off">
+                </div>
+                <ul class="ms-dropdown-list list-unstyled mb-0">
+                  <li class="ms-dropdown-item ms-dropdown-all" data-value="__all__">
+                    <input type="checkbox" class="form-check-input me-2 ms-dropdown-check">
+                    <span class="ms-dropdown-text">Select all</span>
+                  </li>
+                  {% for gen in all_generations %}
+                    <li class="ms-dropdown-item" data-value="{{ gen }}">
+                      <input type="checkbox" class="form-check-input me-2 ms-dropdown-check"
+                             {% if gen in current_generations %}checked{% endif %}>
+                      <span class="ms-dropdown-text">Generation {{ gen }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-4">
+            <label class="form-label small fw-semibold mb-1">Evolution line</label>
+            <div class="ms-dropdown" data-placeholder="All evolution lines">
+              <div class="form-select form-select-sm ms-dropdown-trigger" tabindex="0">
+                <span class="ms-dropdown-label text-muted">All evolution lines</span>
+              </div>
+              <input type="hidden" name="evo_line" value="{{ current_evo_lines | join(',') if current_evo_lines else '' }}">
+              <div class="ms-dropdown-panel d-none">
+                <div class="p-2 border-bottom">
+                  <input type="text" class="form-control form-control-sm ms-dropdown-search" placeholder="Search Pokémon or line…" autocomplete="off">
+                </div>
+                <ul class="ms-dropdown-list list-unstyled mb-0">
+                  <li class="ms-dropdown-item ms-dropdown-all" data-value="__all__">
+                    <input type="checkbox" class="form-check-input me-2 ms-dropdown-check">
+                    <span class="ms-dropdown-text">Select all</span>
+                  </li>
+                  {% for evo_id, evo_name, evo_search in all_evo_lines %}
+                    <li class="ms-dropdown-item" data-value="{{ evo_id }}" data-search="{{ evo_search }}">
+                      <input type="checkbox" class="form-check-input me-2 ms-dropdown-check"
+                             {% if evo_id in current_evo_lines %}checked{% endif %}>
+                      <span class="ms-dropdown-text">#{{ '%03d' % evo_id }} {{ evo_name }}-line</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-4">
+            <label class="form-label small fw-semibold mb-1">Pokémon</label>
+            <div class="ms-dropdown" data-placeholder="All Pokémon">
+              <div class="form-select form-select-sm ms-dropdown-trigger" tabindex="0">
+                <span class="ms-dropdown-label text-muted">All Pokémon</span>
+              </div>
+              <input type="hidden" name="pokemon" value="{{ current_pokemon_ids | join(',') if current_pokemon_ids else '' }}">
+              <div class="ms-dropdown-panel d-none">
+                <div class="p-2 border-bottom">
+                  <input type="text" class="form-control form-control-sm ms-dropdown-search" placeholder="Search Pokémon…" autocomplete="off">
+                </div>
+                <ul class="ms-dropdown-list list-unstyled mb-0">
+                  <li class="ms-dropdown-item ms-dropdown-all" data-value="__all__">
+                    <input type="checkbox" class="form-check-input me-2 ms-dropdown-check">
+                    <span class="ms-dropdown-text">Select all</span>
+                  </li>
+                  {% for p_id, p_name in all_pokemon %}
+                    <li class="ms-dropdown-item" data-value="{{ p_id }}">
+                      <input type="checkbox" class="form-check-input me-2 ms-dropdown-check"
+                             {% if p_id in current_pokemon_ids %}checked{% endif %}>
+                      <span class="ms-dropdown-text">#{{ '%03d' % p_id }} {{ p_name }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+
         </div>
-        <div class="text-muted small mt-1">{{ p.total }} card{{ 's' if p.total != 1 }}</div>
+
+        {# Row 2: Sort by & Group by #}
+        <div class="row g-2 mb-2">
+          <div class="col-12 col-sm-6 col-lg-4">
+            <label class="form-label small fw-semibold mb-1">Sort by</label>
+            <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+              {% for key, label in sort_options %}
+                <option value="{{ key }}" {% if key == current_sort %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <label class="form-label small fw-semibold mb-1">Group by</label>
+            <select name="group_by" class="form-select form-select-sm" onchange="this.form.submit()">
+              {% for key, label in group_by_options %}
+                <option value="{{ key }}" {% if key == current_group_by %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        {# Row 3: Apply + Reset #}
+        <div class="row g-2">
+          <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="bi bi-funnel me-1"></i>Apply filters
+            </button>
+            {% if any_filter %}
+            <a href="{{ url_for('pokemon.index', count=count) }}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-x-lg me-1"></i>Reset filters
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
       </div>
-    </a>
+    </div>
   </div>
+</form>
+
+{# ------------------------------------------------------------------ #}
+{# Pokemon grid                                                         #}
+{# ------------------------------------------------------------------ #}
+{% if pokemon_data %}
+  {% for group_label, group_items in pokemon_groups %}
+    {% if group_label %}
+      <h5 class="mt-4 mb-2">{{ group_label }}</h5>
+    {% endif %}
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-3 {% if group_label %}mb-3{% endif %}">
+      {% for p in group_items %}
+      <div class="col">
+        <a href="{{ url_for('pokemon.detail', pokedex_number=p.id) }}"
+           class="card h-100 text-decoration-none pokemon-card">
+          <div class="card-body text-center">
+            <div class="pokemon-dex">#{{ '%03d' % p.id }}</div>
+            <div class="pokemon-name mb-2">{{ p.name }}</div>
+            {%- set tracked = p.owned + p.wanted_only -%}
+            {%- set owned_pct   = (p.owned       / tracked * 100) | round(1) if tracked > 0 else 0 -%}
+            {%- set wanted_pct  = (p.wanted_only / tracked * 100) | round(1) if tracked > 0 else 0 -%}
+            <div class="progress pokemon-progress mb-1"
+                 title="{{ p.owned }} owned · {{ p.wanted_only }} wanted">
+              {% if owned_pct  > 0 %}<div class="progress-bar bg-success" style="width:{{ owned_pct }}%"></div>{% endif %}
+              {% if wanted_pct > 0 %}<div class="progress-bar bg-warning" style="width:{{ wanted_pct }}%"></div>{% endif %}
+            </div>
+            <div class="d-flex justify-content-between small mt-1">
+              <span class="text-success fw-semibold">{{ p.owned }} owned</span>
+              {% if p.wanted_only > 0 %}
+                <span class="text-warning fw-semibold">{{ p.wanted_only }} wanted</span>
+              {% endif %}
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
   {% endfor %}
-</div>
 {% else %}
 <div class="text-center py-5 text-muted">
   <i class="bi bi-search fs-1 d-block mb-3"></i>

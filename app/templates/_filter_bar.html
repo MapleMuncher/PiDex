@@ -14,7 +14,7 @@
      current_sort
    ====================================================================== #}
 
-{% set any_filter = current_set_ids or current_series or current_rarities or current_evo_lines or current_owned or current_wanted or (current_untracked is defined and current_untracked) or (current_group_by is defined and current_group_by) or (show_pokemon and current_pokemon_ids) %}
+{% set any_filter = current_set_ids or current_series or current_rarities or current_evo_lines or (current_generations is defined and current_generations) or current_owned or current_wanted or (current_untracked is defined and current_untracked) or (current_group_by is defined and current_group_by) or (show_pokemon and current_pokemon_ids) %}
 
 <form method="get" action="{{ filter_action }}" id="filter-form" class="mb-4">
   <div class="card">
@@ -133,10 +133,12 @@
 
         </div>
 
-        {# Row 2: Evolution line, Pokémon #}
-        {% if show_evo_line is not defined or show_evo_line %}
+        {# Row 2: Evolution line, Pokémon, Generation #}
+        {% set show_row2 = (show_evo_line is not defined or show_evo_line) or (show_pokemon) or (all_generations is defined and all_generations) %}
+        {% if show_row2 %}
         <div class="row g-2 mb-2">
 
+          {% if show_evo_line is not defined or show_evo_line %}
           <div class="col-12 col-sm-6 col-lg-4">
             <label class="form-label small fw-semibold mb-1">Evolution line</label>
             <div class="ms-dropdown" data-placeholder="All evolution lines">
@@ -164,6 +166,7 @@
               </div>
             </div>
           </div>
+          {% endif %}
 
           {% if show_pokemon %}
           <div class="col-12 col-sm-6 col-lg-4">
@@ -195,39 +198,37 @@
           </div>
           {% endif %}
 
-        </div>
-        {% else %}
-        {% if show_pokemon %}
-        <div class="row g-2 mb-2">
+          {% if all_generations is defined and all_generations %}
           <div class="col-12 col-sm-6 col-lg-4">
-            <label class="form-label small fw-semibold mb-1">Pokémon</label>
-            <div class="ms-dropdown" data-placeholder="All Pokémon">
+            <label class="form-label small fw-semibold mb-1">Generation</label>
+            <div class="ms-dropdown" data-placeholder="All generations">
               <div class="form-select form-select-sm ms-dropdown-trigger" tabindex="0">
-                <span class="ms-dropdown-label text-muted">All Pokémon</span>
+                <span class="ms-dropdown-label text-muted">All generations</span>
               </div>
-              <input type="hidden" name="pokemon" value="{{ current_pokemon_ids | join(',') if current_pokemon_ids else '' }}">
+              <input type="hidden" name="generation" value="{{ current_generations | join(',') if (current_generations is defined and current_generations) else '' }}">
               <div class="ms-dropdown-panel d-none">
                 <div class="p-2 border-bottom">
-                  <input type="text" class="form-control form-control-sm ms-dropdown-search" placeholder="Search Pokémon…" autocomplete="off">
+                  <input type="text" class="form-control form-control-sm ms-dropdown-search" placeholder="Search generations…" autocomplete="off">
                 </div>
                 <ul class="ms-dropdown-list list-unstyled mb-0">
                   <li class="ms-dropdown-item ms-dropdown-all" data-value="__all__">
                     <input type="checkbox" class="form-check-input me-2 ms-dropdown-check">
                     <span class="ms-dropdown-text">Select all</span>
                   </li>
-                  {% for p_id, p_name in all_pokemon %}
-                    <li class="ms-dropdown-item" data-value="{{ p_id }}">
+                  {% for gen in all_generations %}
+                    <li class="ms-dropdown-item" data-value="{{ gen }}">
                       <input type="checkbox" class="form-check-input me-2 ms-dropdown-check"
-                             {% if p_id in current_pokemon_ids %}checked{% endif %}>
-                      <span class="ms-dropdown-text">#{{ '%03d' % p_id }} {{ p_name }}</span>
+                             {% if current_generations is defined and gen in current_generations %}checked{% endif %}>
+                      <span class="ms-dropdown-text">Generation {{ gen }}</span>
                     </li>
                   {% endfor %}
                 </ul>
               </div>
             </div>
           </div>
+          {% endif %}
+
         </div>
-        {% endif %}
         {% endif %}
 
         {# Row 3: Status #}
