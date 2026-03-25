@@ -283,6 +283,8 @@ class Collection(db.Model):
         mode (str): Collection mode, e.g. "pokemon", "set".
         date_from (date): Optional start date filter for sets.
         date_to (date): Optional end date filter for sets.
+        highlighted_card_id (str): Optional card to feature on the
+            collection index tile.
     """
 
     __tablename__ = "collections"
@@ -292,6 +294,9 @@ class Collection(db.Model):
     mode = db.Column(db.String, nullable=False)
     date_from = db.Column(db.Date, nullable=True)
     date_to = db.Column(db.Date, nullable=True)
+    highlighted_card_id = db.Column(
+        db.String, db.ForeignKey("cards.id"), nullable=True
+    )
 
     collection_pokemon = db.relationship(
         "CollectionPokemon", back_populates="collection"
@@ -301,6 +306,9 @@ class Collection(db.Model):
     )
     collection_cards = db.relationship(
         "CollectionCard", back_populates="collection"
+    )
+    highlighted_card = db.relationship(
+        "Card", foreign_keys=[highlighted_card_id]
     )
 
 
@@ -340,7 +348,19 @@ class CollectionRarity(db.Model):
 
 
 class CollectionCard(db.Model):
-    """Tracks which cards belong to a collection."""
+    """
+    Per-collection card metadata.
+
+    Tracks collection-specific state for a card, such as whether the
+    user has flagged it as their binder pick for this collection.
+
+    Attributes:
+        collection_id (str): Foreign key to the parent Collection.
+        card_id (str): Foreign key to the Card.
+        pokemon_id (int): Optional Pokémon context for the slot.
+        is_binder (bool): Whether this card is flagged as the binder
+            pick for this collection. Shown as a blue badge.
+    """
 
     __tablename__ = "collection_cards"
 
@@ -352,6 +372,9 @@ class CollectionCard(db.Model):
     )
     pokemon_id = db.Column(
         db.Integer, db.ForeignKey("pokemon.id"), nullable=True
+    )
+    is_binder = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
     )
 
     collection = db.relationship(

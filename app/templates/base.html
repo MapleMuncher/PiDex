@@ -317,8 +317,49 @@
       color: #212529;
     }
 
-    /* On mobile: stack buttons vertically on the left */
+    .badge-binder.is-active {
+      background: #0d6efd;
+      color: #fff;
+    }
+
+    /* Badge text: collapsed on desktop, expands on hover */
+    .badge-text {
+      display: inline-block;
+      max-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      white-space: nowrap;
+      vertical-align: middle;
+      margin-left: 0;
+      transition: max-width 0.2s ease, opacity 0.15s ease, margin-left 0.15s ease;
+    }
+
+    .card-thumb-badge:hover .badge-text,
+    .card-thumb-badge:focus-visible .badge-text {
+      max-width: 70px;
+      opacity: 1;
+      margin-left: 2px;
+    }
+
+    /* Desktop: slightly larger icon-only badges */
+    @media (min-width: 577px) {
+      .card-thumb-badge {
+        padding: 4px 8px;
+        font-size: 1rem;
+      }
+    }
+
+    /* On mobile: stack buttons vertically on the left, always show text */
     @media (max-width: 576px) {
+      .badge-text {
+        display: inline;
+        max-width: none !important;
+        overflow: visible !important;
+        opacity: 1 !important;
+        margin-left: 0 !important;
+        transition: none !important;
+      }
+
       .card-thumb-badges {
         flex-direction: column;
         align-items: flex-start;
@@ -716,7 +757,7 @@
     });
 
     // ----------------------------------------------------------------
-    // Card status toggle (thumbnail buttons)
+    // Card status toggle (owned / wanted thumbnail buttons)
     // ----------------------------------------------------------------
     async function toggleCardStatus(event, field) {
       event.preventDefault();
@@ -740,6 +781,34 @@
         inner.dataset.wanted = data.wanted;
         inner.querySelector('.card-thumb-badges .badge-owned').classList.toggle('is-active', data.owned);
         inner.querySelector('.card-thumb-badges .badge-wanted').classList.toggle('is-active', data.wanted);
+      } catch(e) {
+        // silent fail on thumbnail
+      }
+    }
+
+    // ----------------------------------------------------------------
+    // Binder toggle (collection-scoped, blue badge)
+    // ----------------------------------------------------------------
+    async function toggleBinderStatus(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const inner        = event.currentTarget.closest('.card-thumb-inner');
+      const cardId       = inner.dataset.cardId;
+      const collectionId = inner.dataset.collectionId;
+      if (!collectionId) return;
+
+      try {
+        const resp = await fetch('/collection/toggle-binder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ card_id: cardId, collection_id: collectionId })
+        });
+        if (!resp.ok) throw new Error();
+        const data = await resp.json();
+
+        inner.dataset.binder = data.is_binder;
+        inner.querySelector('.card-thumb-badges .badge-binder').classList.toggle('is-active', data.is_binder);
       } catch(e) {
         // silent fail on thumbnail
       }

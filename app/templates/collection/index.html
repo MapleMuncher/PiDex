@@ -1,7 +1,150 @@
 {% extends "base.html" %}
 
-{% block title %}Collection{% endblock %}
+{% block title %}Collections{% endblock %}
 
 {% block content %}
-<h1>Collection</h1>
+
+<div class="page-header d-flex justify-content-between align-items-end mb-4">
+  <div>
+    <h1>Collections</h1>
+    <p>{{ collections | length }} collection{{ 's' if collections | length != 1 }}</p>
+  </div>
+  <a href="{{ url_for('collection.new') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>New collection
+  </a>
+</div>
+
+{% if collections %}
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+    {% for col in collections %}
+      {% set owned, total = stats[col.id] %}
+      <div class="col">
+        <a href="{{ url_for('collection.detail', collection_id=col.id) }}"
+           class="text-decoration-none">
+          <div class="card h-100 collection-tile">
+
+            {# Highlighted card image (or placeholder) #}
+            <div class="collection-tile-img-wrap">
+              {% if col.highlighted_card %}
+                <img
+                  src="/images/cards/{{ col.highlighted_card.set_code }}/{{ col.highlighted_card.set_number }}_thumb.webp"
+                  onerror="this.onerror=null;this.src='/images/cards/{{ col.highlighted_card.set_code }}/{{ col.highlighted_card.set_number }}.png'"
+                  alt="{{ col.highlighted_card.name }}"
+                  class="collection-tile-img">
+              {% else %}
+                <div class="collection-tile-placeholder">
+                  <i class="bi bi-collection fs-1 text-muted"></i>
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="card-body pb-2">
+              <h6 class="card-title mb-1 text-dark fw-bold">{{ col.name }}</h6>
+
+              {# Criteria pills #}
+              <div class="d-flex flex-wrap gap-1 mb-2">
+                {% if col.collection_pokemon %}
+                  <span class="badge bg-light text-dark border small">
+                    {{ col.collection_pokemon | length }} Pokémon
+                  </span>
+                {% endif %}
+                {% if col.collection_rarities %}
+                  <span class="badge bg-light text-dark border small">
+                    {{ col.collection_rarities | length }} rarit{{ 'ies' if col.collection_rarities | length != 1 else 'y' }}
+                  </span>
+                {% endif %}
+                {% if col.date_from or col.date_to %}
+                  <span class="badge bg-light text-dark border small">
+                    {% if col.date_from and col.date_to %}
+                      {{ col.date_from.strftime('%Y') }}–{{ col.date_to.strftime('%Y') }}
+                    {% elif col.date_from %}
+                      From {{ col.date_from.strftime('%Y') }}
+                    {% else %}
+                      Until {{ col.date_to.strftime('%Y') }}
+                    {% endif %}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            {# Progress bar #}
+            <div class="card-footer bg-transparent pt-0 pb-3 px-3">
+              {% if total > 0 %}
+                {% set pct = ((owned / total) * 100) | round(0) | int %}
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="small text-muted">Progress</span>
+                  <span class="small fw-semibold text-teal">{{ owned }}/{{ total }}</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar bg-teal"
+                       role="progressbar"
+                       style="width: {{ pct }}%"
+                       aria-valuenow="{{ pct }}"
+                       aria-valuemin="0"
+                       aria-valuemax="100"></div>
+                </div>
+              {% else %}
+                <span class="small text-muted">No cards tracked yet</span>
+              {% endif %}
+            </div>
+
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-collection fs-1 d-block mb-3"></i>
+    <p class="mb-3">No collections yet.</p>
+    <a href="{{ url_for('collection.new') }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-lg me-1"></i>Create your first collection
+    </a>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .collection-tile {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .collection-tile:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  }
+
+  .collection-tile-img-wrap {
+    height: 140px;
+    background-color: var(--pidex-grey);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .collection-tile-img {
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+    padding: 8px;
+  }
+
+  .collection-tile-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .bg-teal {
+    background-color: var(--pidex-teal) !important;
+  }
+</style>
 {% endblock %}

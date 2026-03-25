@@ -10,7 +10,7 @@ from app.sorting import DEFAULT_SORT, SORT_OPTIONS, VALID_GROUP_BY, apply_sort, 
 
 cards_bp = Blueprint("cards", __name__, url_prefix="/cards")
 
-CARDS_PER_PAGE = 30
+CARDS_PER_PAGE = 60
 
 
 def _parse_multi(raw):

@@ -14,7 +14,7 @@
      current_sort
    ====================================================================== #}
 
-{% set any_filter = current_set_ids or current_series or current_rarities or current_evo_lines or (current_generations is defined and current_generations) or current_owned or current_wanted or (current_untracked is defined and current_untracked) or (current_group_by is defined and current_group_by) or (show_pokemon and current_pokemon_ids) %}
+{% set any_filter = current_set_ids or current_series or current_rarities or current_evo_lines or (current_generations is defined and current_generations) or current_owned or current_wanted or (current_untracked is defined and current_untracked) or (current_binder is defined and current_binder) or (current_group_by is defined and current_group_by) or (show_pokemon and current_pokemon_ids) %}
 
 <form method="get" action="{{ filter_action }}" id="filter-form" class="mb-4">
   <div class="card">
@@ -255,6 +255,15 @@
                      title="Show only cards for Pokémon with no owned or wanted cards">
                 <i class="bi bi-question-diamond me-1"></i>Untracked
               </label>
+              {% if show_binder_filter is defined and show_binder_filter %}
+              <input class="btn-check" type="checkbox" name="binder" id="filter-binder" autocomplete="off"
+                     {% if current_binder is defined and current_binder %}checked{% endif %}
+                     onchange="this.form.submit()">
+              <label class="btn btn-sm btn-outline-primary" for="filter-binder"
+                     title="Show only cards flagged as binder picks">
+                <i class="bi bi-bookmark-fill me-1"></i>Binder
+              </label>
+              {% endif %}
               {% if current_owned and current_wanted %}
               <div class="btn-group btn-group-sm" role="group">
                 <button type="submit" name="status_match" value="any"

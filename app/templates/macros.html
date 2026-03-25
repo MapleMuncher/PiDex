@@ -5,18 +5,23 @@
 
 
 {# ----------------------------------------------------------------------
-   card_thumbnail(card, card_status=None)
+   card_thumbnail(card, card_status=None, is_binder=False,
+                  collection_id=None)
 
-   Renders a clickable card thumbnail with two toggle buttons (Owned /
-   Wanted). Both buttons are always visible; active state is styled via
+   Renders a clickable card thumbnail with toggle buttons (Owned /
+   Wanted, and optionally Binder). Active state is styled via
    the is-active class. Clicking a button toggles that flag without
    navigating away. Clicking the card image navigates to the detail page.
 
    Args:
-     card        — a Card model instance
-     card_status — a CardStatus model instance or None
+     card          — a Card model instance
+     card_status   — a CardStatus model instance or None
+     is_binder     — bool; whether this card is the binder pick in the
+                     current collection context
+     collection_id — str; when set, enables the Binder toggle and scopes
+                     the toggle call to the correct collection
    ---------------------------------------------------------------------- #}
-{% macro card_thumbnail(card, card_status=None) %}
+{% macro card_thumbnail(card, card_status=None, is_binder=False, collection_id=None) %}
 {% set is_owned  = card_status.owned  if card_status else false %}
 {% set is_wanted = card_status.wanted if card_status else false %}
 <a href="{{ url_for('cards.detail', card_id=card.id) }}"
@@ -26,7 +31,9 @@
   <div class="card-thumb-inner"
        data-card-id="{{ card.id }}"
        data-owned="{{ 'true' if is_owned else 'false' }}"
-       data-wanted="{{ 'true' if is_wanted else 'false' }}">
+       data-wanted="{{ 'true' if is_wanted else 'false' }}"
+       {% if collection_id %}data-collection-id="{{ collection_id }}"
+       data-binder="{{ 'true' if is_binder else 'false' }}"{% endif %}>
 
     {# Card image — use WebP thumbnail for speed, fall back to PNG, then remote URL #}
     {% if card.image_url %}
@@ -47,17 +54,22 @@
 
     {# Toggle buttons — always shown, active state driven by is-active class #}
     <div class="card-thumb-badges">
-      <button class="card-thumb-badge badge-owned {{ 'is-active' if is_owned }}"
-              onclick="toggleCardStatus(event, 'owned')"
-              title="Toggle owned">
-        <i class="bi bi-check-lg"></i>Owned
+      <button class="card-thumb-badge badge-wanted {{ 'is-active' if is_wanted }}"
+              onclick="toggleCardStatus(event, 'wanted')">
+        <i class="bi bi-star-fill"></i><span class="badge-text">Wanted</span>
       </button>
 
-      <button class="card-thumb-badge badge-wanted {{ 'is-active' if is_wanted }}"
-              onclick="toggleCardStatus(event, 'wanted')"
-              title="Toggle wanted">
-        <i class="bi bi-star-fill"></i>Wanted
+      <button class="card-thumb-badge badge-owned {{ 'is-active' if is_owned }}"
+              onclick="toggleCardStatus(event, 'owned')">
+        <i class="bi bi-check-lg"></i><span class="badge-text">Owned</span>
       </button>
+
+      {% if collection_id %}
+      <button class="card-thumb-badge badge-binder {{ 'is-active' if is_binder }}"
+              onclick="toggleBinderStatus(event)">
+        <i class="bi bi-bookmark-fill"></i><span class="badge-text">Binder</span>
+      </button>
+      {% endif %}
     </div>
 
   </div>
@@ -77,7 +89,7 @@
      **kwargs       — any extra query parameters to include in page links
                       (e.g. set_id=..., rarity=...)
    ---------------------------------------------------------------------- #}
-{% macro pagination(pagination_obj, endpoint, set_id='', series='', rarity='', pokemon='', evo_line=None, generation=None, sort='set', owned=None, wanted=None, status_match=None, untracked=None, group_by=None) %}
+{% macro pagination(pagination_obj, endpoint, collection_id=None, set_id='', series='', rarity='', pokemon='', evo_line=None, generation=None, sort='set', owned=None, wanted=None, status_match=None, untracked=None, group_by=None) %}
 {% if pagination_obj.pages > 1 %}
 <nav aria-label="Page navigation" class="mt-4">
   <ul class="pagination justify-content-center flex-wrap gap-1">
@@ -85,7 +97,7 @@
     {# Previous #}
     <li class="page-item {% if not pagination_obj.has_prev %}disabled{% endif %}">
       <a class="page-link"
-         href="{{ url_for(endpoint, page=pagination_obj.prev_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, evo_line=evo_line, generation=generation, sort=sort, owned=owned, wanted=wanted, status_match=status_match, untracked=untracked, group_by=group_by) if pagination_obj.has_prev else '#' }}"
+         href="{{ url_for(endpoint, collection_id=collection_id, page=pagination_obj.prev_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, evo_line=evo_line, generation=generation, sort=sort, owned=owned, wanted=wanted, status_match=status_match, untracked=untracked, group_by=group_by) if pagination_obj.has_prev else '#' }}"
          aria-label="Previous">
         <i class="bi bi-chevron-left"></i>
       </a>
@@ -96,7 +108,7 @@
       {% if page_num %}
         <li class="page-item {% if page_num == pagination_obj.page %}active{% endif %}">
           <a class="page-link"
-             href="{{ url_for(endpoint, page=page_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, evo_line=evo_line, generation=generation, sort=sort, owned=owned, wanted=wanted, status_match=status_match, untracked=untracked, group_by=group_by) }}">
+             href="{{ url_for(endpoint, collection_id=collection_id, page=page_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, evo_line=evo_line, generation=generation, sort=sort, owned=owned, wanted=wanted, status_match=status_match, untracked=untracked, group_by=group_by) }}">
             {{ page_num }}
           </a>
         </li>
@@ -110,7 +122,7 @@
     {# Next #}
     <li class="page-item {% if not pagination_obj.has_next %}disabled{% endif %}">
       <a class="page-link"
-         href="{{ url_for(endpoint, page=pagination_obj.next_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, evo_line=evo_line, generation=generation, sort=sort, owned=owned, wanted=wanted, status_match=status_match, untracked=untracked, group_by=group_by) if pagination_obj.has_next else '#' }}"
+         href="{{ url_for(endpoint, collection_id=collection_id, page=pagination_obj.next_num, set_id=set_id, series=series, rarity=rarity, pokemon=pokemon, evo_line=evo_line, generation=generation, sort=sort, owned=owned, wanted=wanted, status_match=status_match, untracked=untracked, group_by=group_by) if pagination_obj.has_next else '#' }}"
          aria-label="Next">
         <i class="bi bi-chevron-right"></i>
       </a>

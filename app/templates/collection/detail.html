@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% from "macros.html" import card_thumbnail, pagination %}
+
+{% block title %}{{ collection.name }}{% endblock %}
+
+{% block content %}
+
+{# ------------------------------------------------------------------ #}
+{# Header                                                              #}
+{# ------------------------------------------------------------------ #}
+<div class="page-header d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <nav aria-label="breadcrumb" class="mb-1">
+      <ol class="breadcrumb mb-0 small">
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('collection.index') }}">Collections</a>
+        </li>
+        <li class="breadcrumb-item active">{{ collection.name }}</li>
+      </ol>
+    </nav>
+    <h1 class="mb-1">{{ collection.name }}</h1>
+
+    {# Progress #}
+    {% if total_count > 0 %}
+      {% set pct = ((owned_count / total_count) * 100) | round(0) | int %}
+      <div class="d-flex align-items-center gap-3">
+        <p class="mb-0 text-muted">
+          {{ cards_pagination.total }} eligible card{{ 's' if cards_pagination.total != 1 }}
+          &nbsp;·&nbsp;
+          <span class="text-teal fw-semibold">{{ owned_count }}/{{ total_count }}</span>
+          tracked
+        </p>
+        <div class="progress flex-grow-1" style="height:6px; max-width:180px;">
+          <div class="progress-bar" role="progressbar"
+               style="width:{{ pct }}%; background-color: var(--pidex-teal);"
+               aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <span class="small text-muted">{{ pct }}%</span>
+      </div>
+    {% else %}
+      <p class="mb-0 text-muted">
+        {{ cards_pagination.total }} eligible card{{ 's' if cards_pagination.total != 1 }}
+        &nbsp;·&nbsp; No cards tracked yet
+      </p>
+    {% endif %}
+  </div>
+
+  <div class="d-flex gap-2 flex-shrink-0">
+    <a href="{{ url_for('collection.edit', collection_id=collection.id) }}"
+       class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-pencil me-1"></i>Edit
+    </a>
+  </div>
+</div>
+
+{# ------------------------------------------------------------------ #}
+{# Criteria chips (remind the user what this collection is scoped to) #}
+{# ------------------------------------------------------------------ #}
+{% set has_criteria = collection.collection_pokemon or collection.collection_rarities or collection.date_from or collection.date_to %}
+{% if has_criteria %}
+<div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+  <span class="small text-muted fw-semibold">Showing:</span>
+  {% if collection.collection_pokemon %}
+    <span class="badge bg-light text-dark border">
+      <i class="bi bi-filter me-1"></i>
+      {{ collection.collection_pokemon | length }} Pokémon
+    </span>
+  {% endif %}
+  {% if collection.collection_rarities %}
+    {% for cr in collection.collection_rarities %}
+      <span class="badge bg-light text-dark border">{{ cr.norm_rarity }}</span>
+    {% endfor %}
+  {% endif %}
+  {% if collection.date_from %}
+    <span class="badge bg-light text-dark border">
+      From {{ collection.date_from.strftime('%b %Y') }}
+    </span>
+  {% endif %}
+  {% if collection.date_to %}
+    <span class="badge bg-light text-dark border">
+      Until {{ collection.date_to.strftime('%b %Y') }}
+    </span>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ------------------------------------------------------------------ #}
+{# Filter bar (set + rarity + owned/wanted + sort + group)             #}
+{# ------------------------------------------------------------------ #}
+{% set filter_action     = url_for('collection.detail', collection_id=collection.id) %}
+{% set filter_reset_url  = url_for('collection.detail', collection_id=collection.id) %}
+{% set show_series       = false %}
+{% set show_evo_line     = false %}
+{% set show_pokemon      = false %}
+{% set show_binder_filter = true %}
+{% include '_filter_bar.html' %}
+
+{# ------------------------------------------------------------------ #}
+{# Card grid                                                           #}
+{# ------------------------------------------------------------------ #}
+{% if cards %}
+  {% for group_label, group_cards in card_groups %}
+    {% if group_label %}
+      <h5 class="mt-4 mb-2">{{ group_label }}</h5>
+    {% endif %}
+    <div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 row-cols-xl-10 g-2 {% if group_label %}mb-3{% endif %}">
+      {% for card in group_cards %}
+        <div class="col">
+          {{ card_thumbnail(
+               card,
+               status_map.get(card.id),
+               is_binder=(card.id in binder_set),
+               collection_id=collection.id
+             ) }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+
+  {{ pagination(cards_pagination, 'collection.detail',
+      collection_id=collection.id,
+      set_id=current_set_ids|join(',') if current_set_ids else '',
+      rarity=current_rarities|join(',') if current_rarities else '',
+      sort=current_sort,
+      owned='1' if current_owned else None,
+      wanted='1' if current_wanted else None,
+      group_by=current_group_by or None) }}
+
+{% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-search fs-1 d-block mb-3"></i>
+    <p class="mb-1">No cards found matching your filters.</p>
+    <a href="{{ url_for('collection.detail', collection_id=collection.id) }}"
+       class="btn btn-outline-secondary btn-sm mt-2">
+      Clear filters
+    </a>
+  </div>
+{% endif %}
+
+{% endblock %}
