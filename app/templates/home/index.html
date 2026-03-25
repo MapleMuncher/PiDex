@@ -99,7 +99,7 @@
   <div class="col-12 col-sm-6 col-lg-3">
     <a href="{{ url_for('cards.index') }}" class="nav-tile">
       <div class="nav-tile-icon">
-        <i class="bi bi-grid"></i>
+        <i class="bi bi-file-richtext"></i>
       </div>
       <p class="nav-tile-title">Cards</p>
       <p class="nav-tile-desc">Search and filter across all {{ total_cards }} cards in the database.</p>
@@ -109,7 +109,7 @@
   <div class="col-12 col-sm-6 col-lg-3">
     <a href="{{ url_for('sets.index') }}" class="nav-tile">
       <div class="nav-tile-icon">
-        <i class="bi bi-collection"></i>
+        <i class="bi bi-view-stacked"></i>
       </div>
       <p class="nav-tile-title">Sets</p>
       <p class="nav-tile-desc">Browse all {{ total_sets }} sets, track completion and view progress.</p>
@@ -119,20 +119,20 @@
   <div class="col-12 col-sm-6 col-lg-3">
     <a href="{{ url_for('collection.index') }}" class="nav-tile">
       <div class="nav-tile-icon">
-        <i class="bi bi-star"></i>
+        <i class="bi bi-collection"></i>
       </div>
-      <p class="nav-tile-title">Collection</p>
-      <p class="nav-tile-desc">Manage your {{ owned_count }} owned and {{ wanted_only_count }} wanted cards.</p>
+      <p class="nav-tile-title">Collections</p>
+      <p class="nav-tile-desc">Manage your collections.</p>
     </a>
   </div>
 
   <div class="col-12 col-sm-6 col-lg-3">
-    <a href="{{ url_for('binders.index') }}" class="nav-tile">
+    <a href="{{ url_for('pokemon.index') }}" class="nav-tile">
       <div class="nav-tile-icon">
-        <i class="bi bi-book"></i>
+        <i class="bi bi-bug"></i>
       </div>
-      <p class="nav-tile-title">Binders</p>
-      <p class="nav-tile-desc">Organise your cards into custom binders.</p>
+      <p class="nav-tile-title">Pokémon</p>
+      <p class="nav-tile-desc">Explore information about your favorite Pokémon.</p>
     </a>
   </div>
 

@@ -173,19 +173,11 @@
     /* ------------------------------------------------------------------ */
     /* Badges                                                               */
     /* ------------------------------------------------------------------ */
-    .badge-wanted {
-      background-color: #FFC107;
-      color: #1A1A1A;
-      font-weight: 600;
-      font-size: 0.7rem;
+    .badge-icons {
+      display: inline-flex;
+      align-items: center;
     }
 
-    .badge-owned {
-      background-color: var(--pidex-teal);
-      color: var(--pidex-white);
-      font-weight: 600;
-      font-size: 0.7rem;
-    }
 
     /* ------------------------------------------------------------------ */
     /* Flash messages                                                       */
@@ -244,15 +236,6 @@
       border-radius: 8px;
     }
 
-    /* Status border trim — driven by data attributes */
-    .card-thumb-inner[data-owned="true"] {
-      box-shadow: 0 0 0 0px var(--pidex-teal);
-    }
-
-    .card-thumb-inner[data-wanted="true"]:not([data-owned="true"]) {
-      box-shadow: 0 0 0 0px #FFC107;
-    }
-
     /* Grey overlay for cards not owned */
     .card-thumb-overlay {
       position: absolute;
@@ -298,33 +281,60 @@
       align-items: center;
       gap: 2px;
       line-height: 1.2;
-      background: rgba(0, 0, 0, 0.45);
-      color: rgba(255, 255, 255, 0.6);
+      border: 1px solid var(--pidex-border);
       transition: background 0.15s, color 0.15s, transform 0.1s;
     }
 
     .card-thumb-badge:hover {
-      transform: scale(1.08);
+      transform: scale(1);
     }
 
-    .badge-owned.is-active {
-      background: var(--pidex-teal);
-      color: #fff;
+    /* Filled/unfilled icon switching
+       Both icons stay in the flow as inline-block so the button never
+       changes size. The hidden one is collapsed to width:0.              */
+    .icon-active,
+    .icon-inactive {
+      display: inline-block;
+      overflow: hidden;
+      vertical-align: -0.125em;
+      transition: width 0s, opacity 0.1s;
     }
+    .icon-active  { width: 0;   opacity: 0; }
+    .icon-inactive { width: 1em; opacity: 1; }
 
-    .badge-wanted.is-active {
-      background: #FFC107;
-      color: #212529;
+    .card-thumb-badge.is-active .icon-active,
+    .collection-btn.is-active .icon-active,
+    .btn-check:checked + label .icon-active   { width: 1em; opacity: 1; }
+    .card-thumb-badge.is-active .icon-inactive,
+    .collection-btn.is-active .icon-inactive,
+    .btn-check:checked + label .icon-inactive { width: 0;   opacity: 0; }
+
+    /* Status buttons (filter bar + detail page) */
+    .btn-status,
+    .card-thumb-badge {
+      background-color: var(--pidex-white);
+      border: 1px solid var(--pidex-border);
+      color: var(--pidex-black);
     }
-
-    .badge-binder.is-active {
-      background: #0d6efd;
-      color: #fff;
+    .btn-status:hover,
+    .card-thumb-badge:hover {
+      background-color: var(--pidex-white);
+      border-color: var(--pidex-teal);
+      color: var(--pidex-teal);
     }
-
-    .badge-partner.is-active {
-      background: #dc3545;
-      color: #fff;
+    .btn-status.is-active,
+    .card-thumb-badge.is-active,
+    .btn-check:checked + label.btn-status {
+      background-color: var(--pidex-teal-light);
+      border-color: var(--pidex-teal);
+      color: var(--pidex-teal);
+    }
+    .btn-status.is-active:hover,
+    .card-thumb-badge.is-active:hover,
+    .btn-check:checked + label.btn-status:hover {
+      background-color: var(--pidex-white);
+      border-color: var(--pidex-border);
+      color: var(--pidex-teal);
     }
 
     /* Badge text: collapsed on desktop, expands on hover */
@@ -496,6 +506,7 @@
     /* ------------------------------------------------------------------ */
     .text-teal { color: var(--pidex-teal); }
     .bg-teal-light { background-color: var(--pidex-teal-light); }
+
   </style>
 
   {% block extra_css %}{% endblock %}
@@ -529,42 +540,28 @@
           <li class="nav-item">
             <a class="nav-link {% if request.blueprint == 'cards' %}active{% endif %}"
                href="{{ url_for('cards.index') }}">
-              <i class="bi bi-grid me-1"></i>Cards
+              <i class="bi bi-file-richtext me-1"></i>Cards
             </a>
           </li>
 
           <li class="nav-item">
             <a class="nav-link {% if request.blueprint == 'sets' %}active{% endif %}"
                href="{{ url_for('sets.index') }}">
-              <i class="bi bi-collection me-1"></i>Sets
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a class="nav-link {% if request.blueprint == 'pokemon' and request.endpoint == 'pokemon.index' %}active{% endif %}"
-               href="{{ url_for('pokemon.index') }}">
-              <i class="bi bi-trophy me-1"></i>Pokémon
+              <i class="bi bi-view-stacked me-1"></i>Sets
             </a>
           </li>
 
           <li class="nav-item">
             <a class="nav-link {% if request.blueprint == 'collection' %}active{% endif %}"
                href="{{ url_for('collection.index') }}">
-              <i class="bi bi-star me-1"></i>Collection
+              <i class="bi bi-collection me-1"></i>Collections
             </a>
           </li>
 
           <li class="nav-item">
-            <a class="nav-link {% if request.blueprint == 'binders' %}active{% endif %}"
-               href="{{ url_for('binders.index') }}">
-              <i class="bi bi-book me-1"></i>Binders
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a class="nav-link {% if request.blueprint == 'scraper' %}active{% endif %}"
-               href="{{ url_for('scraper.index') }}">
-              <i class="bi bi-cloud-download me-1"></i>Import
+            <a class="nav-link {% if request.blueprint == 'pokemon' and request.endpoint == 'pokemon.index' %}active{% endif %}"
+               href="{{ url_for('pokemon.index') }}">
+              <i class="bi bi-bug me-1"></i>Pokémon
             </a>
           </li>
 

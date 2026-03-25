@@ -239,36 +239,53 @@
               <input class="btn-check" type="checkbox" name="owned" id="filter-owned" autocomplete="off"
                      {% if current_owned %}checked{% endif %}
                      onchange="this.form.submit()">
-              <label class="btn btn-sm btn-outline-success" for="filter-owned">
-                <i class="bi bi-check-lg me-1"></i>Owned
+              <label class="btn btn-sm btn-status" for="filter-owned">
+                <div class="badge-icons me-1">
+                  <i class="bi bi-bookmark-fill icon-active"></i>
+                  <i class="bi bi-bookmark icon-inactive"></i>
+                </div>
+                Owned
               </label>
               <input class="btn-check" type="checkbox" name="wanted" id="filter-wanted" autocomplete="off"
                      {% if current_wanted %}checked{% endif %}
                      onchange="this.form.submit()">
-              <label class="btn btn-sm btn-outline-warning" for="filter-wanted">
-                <i class="bi bi-star-fill me-1"></i>Wanted
+              <label class="btn btn-sm btn-status" for="filter-wanted">
+                <div class="badge-icons me-1">
+                  <i class="bi bi-bag-fill icon-active"></i>
+                  <i class="bi bi-bag icon-inactive"></i>
+                </div>
+                Wanted
               </label>
               <input class="btn-check" type="checkbox" name="partner" id="filter-partner" autocomplete="off"
                      {% if current_partner is defined and current_partner %}checked{% endif %}
                      onchange="this.form.submit()">
-              <label class="btn btn-sm btn-outline-danger" for="filter-partner"
-                     title="Show only partner's cards">
-                <span class="fw-bold me-1">B</span>Partner
+              <label class="btn btn-sm btn-status" for="filter-partner">
+                <div class="badge-icons me-1">
+                  <i class="bi bi-person-fill icon-active"></i>
+                  <i class="bi bi-person icon-inactive"></i>
+                </div>
+                Partner
               </label>
               <input class="btn-check" type="checkbox" name="untracked" id="filter-untracked" autocomplete="off"
                      {% if current_untracked %}checked{% endif %}
                      onchange="this.form.submit()">
-              <label class="btn btn-sm btn-outline-info" for="filter-untracked"
-                     title="Show only cards for Pokémon with no owned or wanted cards">
-                <i class="bi bi-question-diamond me-1"></i>Untracked
+              <label class="btn btn-sm btn-status" for="filter-untracked">
+                <div class="badge-icons me-1">
+                  <i class="bi bi-exclamation-circle-fill icon-active"></i>
+                  <i class="bi bi-exclamation-circle icon-inactive"></i>
+                </div>
+                Untracked
               </label>
               {% if show_binder_filter is defined and show_binder_filter %}
               <input class="btn-check" type="checkbox" name="binder" id="filter-binder" autocomplete="off"
                      {% if current_binder is defined and current_binder %}checked{% endif %}
                      onchange="this.form.submit()">
-              <label class="btn btn-sm btn-outline-primary" for="filter-binder"
-                     title="Show only cards flagged as binder picks">
-                <i class="bi bi-bookmark-fill me-1"></i>Binder
+              <label class="btn btn-sm btn-status" for="filter-binder">
+                <div class="badge-icons me-1">
+                  <i class="bi bi-map-fill icon-active"></i>
+                  <i class="bi bi-map icon-inactive"></i>
+                </div>
+                Binder
               </label>
               {% endif %}
               {% if current_owned and current_wanted %}

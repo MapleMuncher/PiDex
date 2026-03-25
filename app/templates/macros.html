@@ -57,24 +57,32 @@
     {# Toggle buttons — always shown, active state driven by is-active class #}
     <div class="card-thumb-badges">
       <button class="card-thumb-badge badge-wanted {{ 'is-active' if is_wanted }}"
-              onclick="toggleCardStatus(event, 'wanted')">
-        <i class="bi bi-star-fill"></i><span class="badge-text">Wanted</span>
+        onclick="toggleCardStatus(event, 'wanted')">
+        <i class="bi bi-bag-fill icon-active"></i>
+        <i class="bi bi-bag icon-inactive"></i>
+        <span class="badge-text">Wanted</span>
       </button>
 
       <button class="card-thumb-badge badge-owned {{ 'is-active' if is_owned }}"
-              onclick="toggleCardStatus(event, 'owned')">
-        <i class="bi bi-check-lg"></i><span class="badge-text">Owned</span>
+        onclick="toggleCardStatus(event, 'owned')">
+        <i class="bi bi-bookmark-fill icon-active"></i>
+        <i class="bi bi-bookmark icon-inactive"></i>
+        <span class="badge-text">Owned</span>
       </button>
 
       <button class="card-thumb-badge badge-partner {{ 'is-active' if is_partner }}"
-              onclick="toggleCardStatus(event, 'partner')">
-        B
+        onclick="toggleCardStatus(event, 'partner')">
+        <i class="bi bi-person-fill icon-active"></i>
+        <i class="bi bi-person icon-inactive"></i>
+        <span class="badge-text">Brigitte</span>
       </button>
 
       {% if collection_id %}
       <button class="card-thumb-badge badge-binder {{ 'is-active' if is_binder }}"
-              onclick="toggleBinderStatus(event)">
-        <i class="bi bi-bookmark-fill"></i><span class="badge-text">Binder</span>
+        onclick="toggleBinderStatus(event)">
+        <i class="bi bi-map-fill icon-active"></i>
+        <i class="bi bi-map icon-inactive"></i>
+        <span class="badge-text">Binder</span>
       </button>
       {% endif %}
     </div>

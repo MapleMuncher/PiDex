@@ -58,22 +58,42 @@
          id="collection-toggle"
          data-card-id="{{ card.id }}"
          data-owned="{{ 'true' if card_status and card_status.owned else 'false' }}"
-         data-wanted="{{ 'true' if card_status and card_status.wanted else 'false' }}">
+         data-wanted="{{ 'true' if card_status and card_status.wanted else 'false' }}"
+         data-partner="{{ 'true' if card_status and card_status.partner else 'false' }}">
 
       <div class="d-flex gap-2 flex-wrap">
 
         <button
-          class="btn btn-sm collection-btn"
-          data-field="owned"
+          class="btn btn-sm btn-status collection-btn"
+          data-field="wanted"
           onclick="toggleCollectionField(this)">
-          <i class="bi bi-check-circle me-1"></i>Owned
+          <div class="badge-icons me-1">
+            <i class="bi bi-bag-fill icon-active"></i>
+            <i class="bi bi-bag icon-inactive"></i>
+          </div>
+          Wanted
         </button>
 
         <button
-          class="btn btn-sm collection-btn"
-          data-field="wanted"
+          class="btn btn-sm btn-status collection-btn"
+          data-field="owned"
           onclick="toggleCollectionField(this)">
-          <i class="bi bi-star me-1"></i>Wanted
+          <div class="badge-icons me-1">
+            <i class="bi bi-bookmark-fill icon-active"></i>
+            <i class="bi bi-bookmark icon-inactive"></i>
+          </div>
+          Owned
+        </button>
+
+        <button
+          class="btn btn-sm btn-status collection-btn"
+          data-field="partner"
+          onclick="toggleCollectionField(this)">
+          <div class="badge-icons me-1">
+            <i class="bi bi-person-fill icon-active"></i>
+            <i class="bi bi-person icon-inactive"></i>
+          </div>
+          Brigitte
         </button>
 
       </div>
@@ -166,17 +186,12 @@
     const toggle = document.getElementById("collection-toggle");
     const owned  = toggle.dataset.owned === "true";
     const wanted = toggle.dataset.wanted === "true";
+    const partner = toggle.dataset.partner === "true";
 
     document.querySelectorAll(".collection-btn").forEach(btn => {
-      const field = btn.dataset.field;
-      btn.classList.remove(
-        "btn-outline-secondary", "btn-warning", "btn-success"
-      );
-      if (field === "owned") {
-        btn.classList.add(owned ? "btn-success" : "btn-outline-secondary");
-      } else if (field === "wanted") {
-        btn.classList.add(wanted ? "btn-warning" : "btn-outline-secondary");
-      }
+      const field  = btn.dataset.field;
+      const active = field === "owned" ? owned : field === "wanted" ? wanted : partner;
+      btn.classList.toggle("is-active", active);
     });
   }
 
@@ -196,12 +211,15 @@
     const newWanted = field === "wanted"
       ? toggle.dataset.wanted !== "true"
       : toggle.dataset.wanted === "true";
+    const newPartner = field === "partner"
+      ? toggle.dataset.partner !== "true"
+      : toggle.dataset.partner === "true";
 
     try {
       const response = await fetch("{{ url_for('collection.toggle') }}", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card_id: cardId, owned: newOwned, wanted: newWanted })
+        body: JSON.stringify({ card_id: cardId, owned: newOwned, wanted: newWanted, partner: newPartner })
       });
 
       if (!response.ok) throw new Error("Request failed");
@@ -209,7 +227,9 @@
       const data = await response.json();
       toggle.dataset.owned  = data.owned ? "true" : "false";
       toggle.dataset.wanted = data.wanted ? "true" : "false";
+      toggle.dataset.partner = data.partner ? "true" : "false";
       renderButtons();
+      btn.blur();
       feedback.textContent = "";
 
     } catch (err) {
