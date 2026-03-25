@@ -34,6 +34,7 @@ def _base_query(
     generations=None,
     owned=False,
     wanted=False,
+    partner=False,
     status_match="any",
     untracked=False,
 ):
@@ -77,28 +78,23 @@ def _base_query(
     if rarities:
         query = query.where(Card.norm_rarity.in_(rarities))
 
-    if owned and wanted:
-        condition = (
-            db.and_(CardStatus.owned == True, CardStatus.wanted == True)
-            if status_match == "all"
-            else db.or_(CardStatus.owned == True, CardStatus.wanted == True)
-        )
+    # Build status filter — any combination of owned / wanted / partner
+    active_flags = []
+    if owned:   active_flags.append(CardStatus.owned   == True)
+    if wanted:  active_flags.append(CardStatus.wanted  == True)
+    if partner: active_flags.append(CardStatus.partner == True)
+
+    if active_flags:
+        if status_match == "all" and len(active_flags) > 1:
+            status_condition = db.and_(*active_flags)
+        elif len(active_flags) > 1:
+            status_condition = db.or_(*active_flags)
+        else:
+            status_condition = active_flags[0]
         query = (
             query
             .join(CardStatus, Card.id == CardStatus.card_id)
-            .where(condition)
-        )
-    elif owned:
-        query = (
-            query
-            .join(CardStatus, Card.id == CardStatus.card_id)
-            .where(CardStatus.owned == True)
-        )
-    elif wanted:
-        query = (
-            query
-            .join(CardStatus, Card.id == CardStatus.card_id)
-            .where(CardStatus.wanted == True)
+            .where(status_condition)
         )
 
     if untracked:
@@ -199,6 +195,7 @@ def index():
     generations  = _parse_multi_int(request.args.get("generation", ""))
     owned        = "owned" in request.args
     wanted       = "wanted" in request.args
+    partner      = "partner" in request.args
     status_match = request.args.get("status_match", "any")
     if status_match not in ("any", "all"):
         status_match = "any"
@@ -216,7 +213,8 @@ def index():
     query, has_set_join, has_pokemon_join = _base_query(
         set_ids=set_ids, series_list=series_list, rarities=rarities,
         pokemon_ids=pokemon_ids, evo_lines=evo_lines, generations=generations,
-        owned=owned, wanted=wanted, status_match=status_match, untracked=untracked,
+        owned=owned, wanted=wanted, partner=partner,
+        status_match=status_match, untracked=untracked,
     )
     query               = apply_sort(query, sort, has_set_join=has_set_join, has_pokemon_join=has_pokemon_join, group_by=group_by)
     pagination          = db.paginate(query, page=page, per_page=CARDS_PER_PAGE, error_out=False)
@@ -316,6 +314,7 @@ def index():
         current_generations=generations,
         current_owned=owned,
         current_wanted=wanted,
+        current_partner=partner,
         current_status_match=status_match,
         current_untracked=untracked,
         current_group_by=group_by,

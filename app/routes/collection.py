@@ -538,33 +538,36 @@ def toggle_binder():
 
 @collection_bp.route("/toggle", methods=["POST"])
 def toggle():
-    """Set the owned/wanted status for a card.
+    """Set the owned/wanted/partner status for a card.
 
     Expects JSON: { "card_id": "base1-1", "owned": true/false,
-                    "wanted": true/false }
-    Returns JSON: { "card_id": ..., "owned": ..., "wanted": ... }
+                    "wanted": true/false, "partner": true/false }
+    Returns JSON: { "card_id": ..., "owned": ..., "wanted": ...,
+                    "partner": ... }
     """
     data    = request.get_json()
     card_id = data.get("card_id")
-    owned   = bool(data.get("owned", False))
-    wanted  = bool(data.get("wanted", False))
+    owned   = bool(data.get("owned",   False))
+    wanted  = bool(data.get("wanted",  False))
+    partner = bool(data.get("partner", False))
 
     if not card_id:
         return jsonify({"error": "card_id is required"}), 400
 
     entry = db.session.get(CardStatus, card_id)
 
-    if not owned and not wanted:
+    if not owned and not wanted and not partner:
         if entry:
             db.session.delete(entry)
             db.session.commit()
     elif entry:
-        entry.owned = owned
-        entry.wanted = wanted
+        entry.owned   = owned
+        entry.wanted  = wanted
+        entry.partner = partner
         db.session.commit()
     else:
-        entry = CardStatus(card_id=card_id, owned=owned, wanted=wanted)
+        entry = CardStatus(card_id=card_id, owned=owned, wanted=wanted, partner=partner)
         db.session.add(entry)
         db.session.commit()
 
-    return jsonify({"card_id": card_id, "owned": owned, "wanted": wanted})
+    return jsonify({"card_id": card_id, "owned": owned, "wanted": wanted, "partner": partner})

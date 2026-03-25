@@ -254,12 +254,14 @@ class CardPokedexNumber(db.Model):
 
 class CardStatus(db.Model):
     """
-    Tracks owned/wanted status of a card independently.
+    Tracks owned/wanted/partner status of a card independently.
 
     Attributes:
         card_id (str): Foreign key to the Card. Primary key.
-        owned (bool): Whether the user owns this card.
+        owned (bool): Whether the household owns this card.
         wanted (bool): Whether the user wants this card.
+        partner (bool): Whether this card belongs to the partner.
+            Shown as a red "B" badge on thumbnails.
     """
 
     __tablename__ = "card_status"
@@ -269,6 +271,7 @@ class CardStatus(db.Model):
     )
     owned = db.Column(db.Boolean, nullable=False, default=False)
     wanted = db.Column(db.Boolean, nullable=False, default=False)
+    partner = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
 
     card = db.relationship("Card", back_populates="card_status")
 

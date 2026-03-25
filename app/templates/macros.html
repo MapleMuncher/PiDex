@@ -22,8 +22,9 @@
                      the toggle call to the correct collection
    ---------------------------------------------------------------------- #}
 {% macro card_thumbnail(card, card_status=None, is_binder=False, collection_id=None) %}
-{% set is_owned  = card_status.owned  if card_status else false %}
-{% set is_wanted = card_status.wanted if card_status else false %}
+{% set is_owned   = card_status.owned   if card_status else false %}
+{% set is_wanted  = card_status.wanted  if card_status else false %}
+{% set is_partner = card_status.partner if card_status else false %}
 <a href="{{ url_for('cards.detail', card_id=card.id) }}"
    class="card-thumb text-decoration-none"
    title="{{ card.name }}">
@@ -32,6 +33,7 @@
        data-card-id="{{ card.id }}"
        data-owned="{{ 'true' if is_owned else 'false' }}"
        data-wanted="{{ 'true' if is_wanted else 'false' }}"
+       data-partner="{{ 'true' if is_partner else 'false' }}"
        {% if collection_id %}data-collection-id="{{ collection_id }}"
        data-binder="{{ 'true' if is_binder else 'false' }}"{% endif %}>
 
@@ -62,6 +64,11 @@
       <button class="card-thumb-badge badge-owned {{ 'is-active' if is_owned }}"
               onclick="toggleCardStatus(event, 'owned')">
         <i class="bi bi-check-lg"></i><span class="badge-text">Owned</span>
+      </button>
+
+      <button class="card-thumb-badge badge-partner {{ 'is-active' if is_partner }}"
+              onclick="toggleCardStatus(event, 'partner')">
+        B
       </button>
 
       {% if collection_id %}

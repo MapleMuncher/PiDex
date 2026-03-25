@@ -322,6 +322,11 @@
       color: #fff;
     }
 
+    .badge-partner.is-active {
+      background: #dc3545;
+      color: #fff;
+    }
+
     /* Badge text: collapsed on desktop, expands on hover */
     .badge-text {
       display: inline-block;
@@ -763,24 +768,27 @@
       event.preventDefault();
       event.stopPropagation();
 
-      const inner  = event.currentTarget.closest('.card-thumb-inner');
-      const cardId = inner.dataset.cardId;
-      const newOwned  = field === 'owned'  ? inner.dataset.owned  !== 'true' : inner.dataset.owned  === 'true';
-      const newWanted = field === 'wanted' ? inner.dataset.wanted !== 'true' : inner.dataset.wanted === 'true';
+      const inner   = event.currentTarget.closest('.card-thumb-inner');
+      const cardId  = inner.dataset.cardId;
+      const newOwned   = field === 'owned'   ? inner.dataset.owned   !== 'true' : inner.dataset.owned   === 'true';
+      const newWanted  = field === 'wanted'  ? inner.dataset.wanted  !== 'true' : inner.dataset.wanted  === 'true';
+      const newPartner = field === 'partner' ? inner.dataset.partner !== 'true' : inner.dataset.partner === 'true';
 
       try {
         const resp = await fetch('/collection/toggle', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ card_id: cardId, owned: newOwned, wanted: newWanted })
+          body: JSON.stringify({ card_id: cardId, owned: newOwned, wanted: newWanted, partner: newPartner })
         });
         if (!resp.ok) throw new Error();
         const data = await resp.json();
 
-        inner.dataset.owned  = data.owned;
-        inner.dataset.wanted = data.wanted;
-        inner.querySelector('.card-thumb-badges .badge-owned').classList.toggle('is-active', data.owned);
-        inner.querySelector('.card-thumb-badges .badge-wanted').classList.toggle('is-active', data.wanted);
+        inner.dataset.owned   = data.owned;
+        inner.dataset.wanted  = data.wanted;
+        inner.dataset.partner = data.partner;
+        inner.querySelector('.badge-owned').classList.toggle('is-active', data.owned);
+        inner.querySelector('.badge-wanted').classList.toggle('is-active', data.wanted);
+        inner.querySelector('.badge-partner').classList.toggle('is-active', data.partner);
       } catch(e) {
         // silent fail on thumbnail
       }
