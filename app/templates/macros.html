@@ -29,6 +29,15 @@
    class="card-thumb text-decoration-none"
    title="{{ card.name }}">
 
+  {# Set info strip above the card image #}
+  <div class="card-thumb-meta">
+    <img src="/images/sets/symbols/{{ card.set_code }}.png"
+         {% if card.set and card.set.symbol_url %}onerror="this.onerror=null;this.src='{{ card.set.symbol_url }}'"{% endif %}
+         alt="" class="card-thumb-symbol">
+    <span class="card-thumb-setcode">{{ card.set.code if card.set else card.set_code }}</span>
+    <span class="card-thumb-setnumber">· {{ card.set_number }}</span>
+  </div>
+
   <div class="card-thumb-inner"
        data-card-id="{{ card.id }}"
        data-owned="{{ 'true' if is_owned else 'false' }}"
@@ -54,39 +63,47 @@
     {# Grey overlay for cards not owned #}
     <div class="card-thumb-overlay"></div>
 
-    {# Toggle buttons — always shown, active state driven by is-active class #}
-    <div class="card-thumb-badges">
-      <button class="card-thumb-badge badge-wanted {{ 'is-active' if is_wanted }}"
-        onclick="toggleCardStatus(event, 'wanted')">
+  </div>
+
+  {# Toggle buttons — below the card image #}
+  <div class="card-thumb-badges">
+    <button class="card-thumb-badge badge-wanted {{ 'is-active' if is_wanted }}"
+      onclick="toggleCardStatus(event, 'wanted')">
+      <span class="badge-icons">
         <i class="bi bi-bag-fill icon-active"></i>
         <i class="bi bi-bag icon-inactive"></i>
-        <span class="badge-text">Wanted</span>
-      </button>
+      </span>
+      <span class="badge-text">Wanted</span>
+    </button>
 
-      <button class="card-thumb-badge badge-owned {{ 'is-active' if is_owned }}"
-        onclick="toggleCardStatus(event, 'owned')">
+    <button class="card-thumb-badge badge-owned {{ 'is-active' if is_owned }}"
+      onclick="toggleCardStatus(event, 'owned')">
+      <span class="badge-icons">
         <i class="bi bi-bookmark-fill icon-active"></i>
         <i class="bi bi-bookmark icon-inactive"></i>
-        <span class="badge-text">Owned</span>
-      </button>
+      </span>
+      <span class="badge-text">Owned</span>
+    </button>
 
-      <button class="card-thumb-badge badge-partner {{ 'is-active' if is_partner }}"
-        onclick="toggleCardStatus(event, 'partner')">
+    <button class="card-thumb-badge badge-partner {{ 'is-active' if is_partner }}"
+      onclick="toggleCardStatus(event, 'partner')">
+      <span class="badge-icons">
         <i class="bi bi-person-fill icon-active"></i>
         <i class="bi bi-person icon-inactive"></i>
-        <span class="badge-text">Brigitte</span>
-      </button>
+      </span>
+      <span class="badge-text">Brigitte</span>
+    </button>
 
-      {% if collection_id %}
-      <button class="card-thumb-badge badge-binder {{ 'is-active' if is_binder }}"
-        onclick="toggleBinderStatus(event)">
+    {% if collection_id %}
+    <button class="card-thumb-badge badge-binder {{ 'is-active' if is_binder }}"
+      onclick="toggleBinderStatus(event)">
+      <span class="badge-icons">
         <i class="bi bi-map-fill icon-active"></i>
         <i class="bi bi-map icon-inactive"></i>
-        <span class="badge-text">Binder</span>
-      </button>
-      {% endif %}
-    </div>
-
+      </span>
+      <span class="badge-text">Binder</span>
+    </button>
+    {% endif %}
   </div>
 
 </a>

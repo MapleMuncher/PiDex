@@ -174,9 +174,33 @@
     /* Badges                                                               */
     /* ------------------------------------------------------------------ */
     .badge-icons {
+      position: relative;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
+      width: 1em;
+      height: 1em;
+      flex-shrink: 0;
+      vertical-align: -0.125em;
     }
+
+    .badge-icons .icon-active,
+    .badge-icons .icon-inactive {
+      position: absolute;
+      width: 1em !important;
+      transition: opacity 0.1s;
+    }
+
+    .badge-icons .icon-active  { opacity: 0; }
+    .badge-icons .icon-inactive { opacity: 1; }
+
+    .card-thumb-badge.is-active .badge-icons .icon-active,
+    .collection-btn.is-active .badge-icons .icon-active,
+    .btn-check:checked + label .badge-icons .icon-active  { opacity: 1; }
+
+    .card-thumb-badge.is-active .badge-icons .icon-inactive,
+    .collection-btn.is-active .badge-icons .icon-inactive,
+    .btn-check:checked + label .badge-icons .icon-inactive { opacity: 0; }
 
 
     /* ------------------------------------------------------------------ */
@@ -206,6 +230,33 @@
     /* ------------------------------------------------------------------ */
     .card-thumb {
       display: block;
+    }
+
+    .card-thumb-meta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding-bottom: 3px;
+      font-size: 0.7rem;
+      color: var(--pidex-black);
+      opacity: 0.6;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .card-thumb-symbol {
+      height: 12px;
+      width: auto;
+      flex-shrink: 0;
+    }
+
+    .card-thumb-setcode {
+      font-weight: 600;
+    }
+
+    .card-thumb-setnumber {
+      color: #6c757d;
     }
 
     .card-thumb-inner {
@@ -258,56 +309,27 @@
 
     /* Toggle badge buttons */
     .card-thumb-badges {
-      position: absolute;
-      bottom: 5px;
-      left: 5px;
-      right: 5px;
       display: flex;
       flex-direction: row;
       justify-content: space-between;
-      align-items: flex-end;
-      pointer-events: none;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 0 0;
     }
 
     .card-thumb-badge {
-      pointer-events: all;
-      border: none;
+      flex: 1;
+      justify-content: center;
       border-radius: 4px;
-      padding: 2px 5px;
-      font-size: 0.875rem;
+      padding: 2px 4px;
+      font-size: 0.8rem;
       cursor: pointer;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
-      gap: 2px;
       line-height: 1.2;
-      border: 1px solid var(--pidex-border);
-      transition: background 0.15s, color 0.15s, transform 0.1s;
+      transition: background 0.15s, color 0.15s;
     }
 
-    .card-thumb-badge:hover {
-      transform: scale(1);
-    }
-
-    /* Filled/unfilled icon switching
-       Both icons stay in the flow as inline-block so the button never
-       changes size. The hidden one is collapsed to width:0.              */
-    .icon-active,
-    .icon-inactive {
-      display: inline-block;
-      overflow: hidden;
-      vertical-align: -0.125em;
-      transition: width 0s, opacity 0.1s;
-    }
-    .icon-active  { width: 0;   opacity: 0; }
-    .icon-inactive { width: 1em; opacity: 1; }
-
-    .card-thumb-badge.is-active .icon-active,
-    .collection-btn.is-active .icon-active,
-    .btn-check:checked + label .icon-active   { width: 1em; opacity: 1; }
-    .card-thumb-badge.is-active .icon-inactive,
-    .collection-btn.is-active .icon-inactive,
-    .btn-check:checked + label .icon-inactive { width: 0;   opacity: 0; }
 
     /* Status buttons (filter bar + detail page) */
     .btn-status,
@@ -356,38 +378,13 @@
       margin-left: 2px;
     }
 
-    /* Desktop: slightly larger icon-only badges */
-    @media (min-width: 577px) {
-      .card-thumb-badge {
-        padding: 4px 8px;
-        font-size: 1rem;
-      }
+    /* Touch devices: disable all hover effects on badges */
+    @media (hover: none) {
+      .card-thumb-badge:hover .badge-text { max-width: 0; opacity: 0; margin-left: 0; }
+      .card-thumb-badge:hover,
+      .card-thumb-badge.is-active:hover   { transform: none; background-color: revert; border-color: revert; color: revert; }
     }
 
-    /* On mobile: stack buttons vertically on the left, always show text */
-    @media (max-width: 576px) {
-      .badge-text {
-        display: inline;
-        max-width: none !important;
-        overflow: visible !important;
-        opacity: 1 !important;
-        margin-left: 0 !important;
-        transition: none !important;
-      }
-
-      .card-thumb-badges {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 3px;
-        right: auto;
-      }
-
-      .card-thumb-badge {
-        padding: 4px 7px;
-        font-size: 0.925rem;
-        gap: 3px;
-      }
-    }
 
     /* ------------------------------------------------------------------ */
     /* Collapsible filter pane                                               */
@@ -765,8 +762,9 @@
       event.preventDefault();
       event.stopPropagation();
 
-      const inner   = event.currentTarget.closest('.card-thumb-inner');
-      const cardId  = inner.dataset.cardId;
+      const thumb  = event.currentTarget.closest('.card-thumb');
+      const inner  = thumb.querySelector('.card-thumb-inner');
+      const cardId = inner.dataset.cardId;
       const newOwned   = field === 'owned'   ? inner.dataset.owned   !== 'true' : inner.dataset.owned   === 'true';
       const newWanted  = field === 'wanted'  ? inner.dataset.wanted  !== 'true' : inner.dataset.wanted  === 'true';
       const newPartner = field === 'partner' ? inner.dataset.partner !== 'true' : inner.dataset.partner === 'true';
@@ -783,9 +781,10 @@
         inner.dataset.owned   = data.owned;
         inner.dataset.wanted  = data.wanted;
         inner.dataset.partner = data.partner;
-        inner.querySelector('.badge-owned').classList.toggle('is-active', data.owned);
-        inner.querySelector('.badge-wanted').classList.toggle('is-active', data.wanted);
-        inner.querySelector('.badge-partner').classList.toggle('is-active', data.partner);
+        thumb.querySelector('.badge-owned').classList.toggle('is-active', data.owned);
+        thumb.querySelector('.badge-wanted').classList.toggle('is-active', data.wanted);
+        thumb.querySelector('.badge-partner').classList.toggle('is-active', data.partner);
+        event.currentTarget.blur();
       } catch(e) {
         // silent fail on thumbnail
       }
@@ -798,7 +797,8 @@
       event.preventDefault();
       event.stopPropagation();
 
-      const inner        = event.currentTarget.closest('.card-thumb-inner');
+      const thumb        = event.currentTarget.closest('.card-thumb');
+      const inner        = thumb.querySelector('.card-thumb-inner');
       const cardId       = inner.dataset.cardId;
       const collectionId = inner.dataset.collectionId;
       if (!collectionId) return;
@@ -813,7 +813,8 @@
         const data = await resp.json();
 
         inner.dataset.binder = data.is_binder;
-        inner.querySelector('.card-thumb-badges .badge-binder').classList.toggle('is-active', data.is_binder);
+        thumb.querySelector('.badge-binder').classList.toggle('is-active', data.is_binder);
+        event.currentTarget.blur();
       } catch(e) {
         // silent fail on thumbnail
       }

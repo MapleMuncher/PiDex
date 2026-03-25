@@ -42,7 +42,7 @@
     {% if group_label %}
       <h5 class="mt-4 mb-2">{{ group_label }}</h5>
     {% endif %}
-    <div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 row-cols-xl-10 g-2 {% if group_label %}mb-3{% endif %}">
+    <div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 row-cols-xl-10 gy-4 gx-2 {% if group_label %}mb-3{% endif %}">
       {% for card in group_cards %}
         <div class="col">
           {{ card_thumbnail(card, status_map.get(card.id)) }}
