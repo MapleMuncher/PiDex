@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+from datetime import date
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from sqlalchemy import case, distinct, func
@@ -38,6 +39,16 @@ def _parse_multi(raw):
 def _parse_multi_int(raw):
     """Parse a comma-separated query param into a list of integers."""
     return [int(v) for v in _parse_multi(raw) if v.isdigit()]
+
+
+def _parse_date(raw):
+    """Parse a date string (YYYY-MM-DD) into a Python date object, or None."""
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -227,8 +238,8 @@ def new():
             id=collection_id,
             name=name,
             mode="custom",
-            date_from=request.form.get("date_from") or None,
-            date_to=request.form.get("date_to") or None,
+            date_from=_parse_date(request.form.get("date_from")),
+            date_to=_parse_date(request.form.get("date_to")),
         )
         db.session.add(collection)
 
@@ -268,8 +279,8 @@ def edit(collection_id):
             return redirect(url_for("collection.edit", collection_id=collection_id))
 
         collection.name = name
-        collection.date_from = request.form.get("date_from") or None
-        collection.date_to = request.form.get("date_to") or None
+        collection.date_from = _parse_date(request.form.get("date_from"))
+        collection.date_to = _parse_date(request.form.get("date_to"))
 
         db.session.execute(
             db.delete(CollectionPokemon).where(

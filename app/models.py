@@ -302,13 +302,13 @@ class Collection(db.Model):
     )
 
     collection_pokemon = db.relationship(
-        "CollectionPokemon", back_populates="collection"
+        "CollectionPokemon", back_populates="collection", cascade="all, delete-orphan"
     )
     collection_rarities = db.relationship(
-        "CollectionRarity", back_populates="collection"
+        "CollectionRarity", back_populates="collection", cascade="all, delete-orphan"
     )
     collection_cards = db.relationship(
-        "CollectionCard", back_populates="collection"
+        "CollectionCard", back_populates="collection", cascade="all, delete-orphan"
     )
     highlighted_card = db.relationship(
         "Card", foreign_keys=[highlighted_card_id]

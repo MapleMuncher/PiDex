@@ -138,18 +138,21 @@
         </a>
 
         {% if collection %}
-          <form method="post"
-                action="{{ url_for('collection.delete', collection_id=collection.id) }}"
-                class="ms-auto"
-                onsubmit="return confirm('Delete \'{{ collection.name }}\' permanently?')">
-            <button type="submit" class="btn btn-outline-danger btn-sm">
-              <i class="bi bi-trash me-1"></i>Delete collection
-            </button>
-          </form>
+          <button type="submit" form="delete-form"
+                  class="btn btn-outline-danger ms-auto">
+            <i class="bi bi-trash me-1"></i>Delete collection
+          </button>
         {% endif %}
       </div>
 
     </form>
+
+    {% if collection %}
+      <form id="delete-form" method="post"
+            action="{{ url_for('collection.delete', collection_id=collection.id) }}"
+            onsubmit="return confirm('Delete \'{{ collection.name }}\' permanently?')">
+      </form>
+    {% endif %}
   </div>
 </div>
 
