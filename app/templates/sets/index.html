@@ -68,7 +68,7 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--color-ember);
-    background-color: var(--color-surface-2);
+    background-color: var(--color-surface);
     padding-top: 0.6rem;
     padding-bottom: 0.4rem;
     border-top: 1px solid var(--color-on-dark-border);
@@ -99,7 +99,7 @@
   .sets-card-series-header {
     font-family: var(--font-mono);
     font-weight: 700;
-    font-size: 0.7rem;
+    font-size: 1.2rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--color-ember);
@@ -140,10 +140,10 @@
   {%- endif %}
   {% if t > 0 %}
   <div class="progress sets-progress" title="{{ tooltip }}">
-    {% if o_pct > 0 %}<div class="progress-bar bg-success"           style="width:{{ o_pct }}%"></div>{% endif %}
-    {% if w_pct > 0 %}<div class="progress-bar bg-warning"           style="width:{{ w_pct }}%"></div>{% endif %}
+    {% if o_pct > 0 %}<div class="progress-bar bg-success" style="width:{{ o_pct }}%"></div>{% endif %}
+    {% if w_pct > 0 %}<div class="progress-bar bg-warning" style="width:{{ w_pct }}%"></div>{% endif %}
     {% if u_pct > 0 %}<div class="progress-bar sets-progress-untracked" style="width:{{ u_pct }}%"></div>{% endif %}
-    {% if n_pct > 0 %}<div class="progress-bar sets-progress-neither"   style="width:{{ n_pct }}%"></div>{% endif %}
+    {% if n_pct > 0 %}<div class="progress-bar sets-progress-neither" style="width:{{ n_pct }}%"></div>{% endif %}
   </div>
   {% else %}
   <div class="progress sets-progress">
@@ -156,7 +156,6 @@
 {# Page header: title + view toggle + count toggle                    #}
 {# ------------------------------------------------------------------ #}
 <div class="page-header d-flex align-items-start justify-content-between flex-wrap gap-2">
-  <h1 class="mb-0">Sets</h1>
   <div class="d-flex align-items-center gap-2 flex-wrap">
 
     {# Count toggle (Official / In Database / Collected) #}

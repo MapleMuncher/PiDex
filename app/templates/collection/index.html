@@ -4,16 +4,6 @@
 
 {% block content %}
 
-<div class="page-header d-flex justify-content-between align-items-end mb-4">
-  <div>
-    <h1>Collections</h1>
-    <p>{{ collections | length }} collection{{ 's' if collections | length != 1 }}</p>
-  </div>
-  <a href="{{ url_for('collection.new') }}" class="btn btn-primary btn-sm">
-    <i class="bi bi-plus-lg me-1"></i>New collection
-  </a>
-</div>
-
 {% if collections %}
   <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
     {% for col in collections %}
@@ -103,6 +93,12 @@
     </a>
   </div>
 {% endif %}
+
+<div class="d-flex justify-content-between align-items-end mt-4">
+  <a href="{{ url_for('collection.new') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>New collection
+  </a>
+</div>
 
 {% endblock %}
 
