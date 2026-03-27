@@ -160,22 +160,19 @@
 
 {% block extra_css %}
 <style>
-  /* Pokémon chip selector */
-  .min-height-chips {
-    min-height: 32px;
-  }
+  .min-height-chips { min-height: 32px; }
 
   .pokemon-chip {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background: var(--pidex-teal-light);
-    border: 1px solid var(--pidex-teal);
-    color: var(--pidex-teal-dark);
-    border-radius: 20px;
+    background: rgba(243,156,18,0.12);
+    border: 1px solid rgba(243,156,18,0.4);
+    color: var(--color-ember);
+    border-radius: var(--radius-full);
     padding: 2px 8px 2px 10px;
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
   }
 
@@ -185,24 +182,22 @@
     padding: 0;
     line-height: 1;
     cursor: pointer;
-    color: var(--pidex-teal-dark);
+    color: var(--color-ember);
     font-size: 0.9rem;
     opacity: 0.7;
   }
 
-  .pokemon-chip-remove:hover {
-    opacity: 1;
-  }
+  .pokemon-chip-remove:hover { opacity: 1; }
 
   .pokemon-dropdown-panel {
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
-    background: var(--pidex-white);
-    border: 1px solid var(--pidex-border);
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    background: var(--color-surface);
+    border: 1px solid var(--color-on-dark-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
     z-index: 1050;
     max-height: 240px;
     overflow-y: auto;
@@ -213,18 +208,25 @@
     padding: 6px 12px;
     font-size: 0.875rem;
     cursor: pointer;
+    color: var(--color-on-dark);
   }
 
   .pokemon-dropdown-item:hover {
-    background-color: var(--pidex-teal-light);
+    background-color: rgba(243,156,18,0.10);
   }
 
-  /* Rarity chips */
+  .rarity-item {
+    background: rgba(255,255,255,0.04) !important;
+    color: var(--color-on-dark-muted);
+    border-color: var(--color-on-dark-border) !important;
+    transition: all var(--transition-fast);
+  }
+
   .rarity-item:has(.rarity-check:checked) {
-    background-color: var(--pidex-teal-light) !important;
-    border-color: var(--pidex-teal) !important;
-    color: var(--pidex-teal-dark);
-    font-weight: 600;
+    background: rgba(243,156,18,0.15) !important;
+    border-color: rgba(243,156,18,0.4) !important;
+    color: var(--color-ember) !important;
+    font-weight: 700;
   }
 </style>
 {% endblock %}

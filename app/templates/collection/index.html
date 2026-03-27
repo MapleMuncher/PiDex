@@ -109,19 +109,19 @@
 {% block extra_css %}
 <style>
   .collection-tile {
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    border-radius: 10px;
+    transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
     overflow: hidden;
   }
 
   .collection-tile:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glow-ember);
+    border-color: var(--color-ember) !important;
   }
 
   .collection-tile-img-wrap {
     height: 140px;
-    background-color: var(--pidex-grey);
+    background-color: var(--color-surface-2);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -133,6 +133,11 @@
     width: 100%;
     object-fit: contain;
     padding: 8px;
+    transition: transform var(--transition-slow);
+  }
+
+  .collection-tile:hover .collection-tile-img {
+    transform: scale(1.04);
   }
 
   .collection-tile-placeholder {
@@ -141,10 +146,11 @@
     justify-content: center;
     width: 100%;
     height: 100%;
+    color: var(--color-on-dark-muted);
   }
 
   .bg-teal {
-    background-color: var(--pidex-teal) !important;
+    background: linear-gradient(135deg, var(--color-flame), var(--color-ember)) !important;
   }
 </style>
 {% endblock %}

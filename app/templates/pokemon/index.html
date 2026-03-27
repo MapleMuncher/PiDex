@@ -5,26 +5,30 @@
 {% block extra_css %}
 <style>
   .pokemon-card {
-    color: inherit;
-    transition: box-shadow 0.15s, transform 0.15s;
+    color: var(--color-on-dark) !important;
+    transition: box-shadow var(--transition-base), transform var(--transition-base), border-color var(--transition-base);
+    text-decoration: none !important;
   }
   .pokemon-card:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-    transform: translateY(-2px);
-    color: inherit;
-    text-decoration: none;
+    box-shadow: var(--shadow-glow-ember);
+    transform: translateY(-4px);
+    border-color: var(--color-ember) !important;
+    color: var(--color-on-dark) !important;
   }
 
   .pokemon-dex {
-    font-size: 0.78rem;
-    color: #adb5bd;
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--color-ember);
+    font-weight: 700;
+    letter-spacing: 0.05em;
   }
 
   .pokemon-name {
-    font-weight: 600;
-    font-size: 1rem;
+    font-weight: 800;
+    font-size: 0.95rem;
     line-height: 1.2;
+    color: var(--color-on-dark);
   }
 
   .pokemon-card .card-body {
@@ -33,8 +37,8 @@
 
   .pokemon-progress {
     height: 8px;
-    border-radius: 4px;
-    background-color: #e9ecef;
+    border-radius: var(--radius-full);
+    background-color: var(--color-on-dark-border);
     overflow: hidden;
   }
 </style>

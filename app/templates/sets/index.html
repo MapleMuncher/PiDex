@@ -4,37 +4,34 @@
 
 {% block extra_css %}
 <style>
-  /* ------------------------------------------------------------------ */
-  /* Sets index                                                           */
-  /* ------------------------------------------------------------------ */
   .sets-progress {
     height: 10px;
-    border-radius: 4px;
+    border-radius: var(--radius-full);
     background-color: transparent;
     overflow: hidden;
   }
-  .sets-progress.progress   { background-color: transparent; }
-  .sets-progress-untracked  { background-color: #ced4da; } /* in DB, not tracked */
-  .sets-progress-neither    { background-color: #e9ecef; } /* not in DB at all */
+  .sets-progress.progress    { background-color: var(--color-on-dark-border); }
+  .sets-progress-untracked   { background-color: #4A5568; }
+  .sets-progress-neither     { background-color: #2D3748; }
 
   .legend-swatch {
     display: inline-block;
     width: 12px;
     height: 12px;
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
     flex-shrink: 0;
   }
 
   /* ---- Card view ---- */
   .set-card {
-    color: inherit;
-    transition: box-shadow 0.15s, transform 0.15s;
+    color: var(--color-on-dark) !important;
+    transition: box-shadow var(--transition-base), transform var(--transition-base);
+    text-decoration: none !important;
   }
   .set-card:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-    transform: translateY(-2px);
-    color: inherit;
-    text-decoration: none;
+    box-shadow: var(--shadow-glow-ember);
+    transform: translateY(-4px);
+    border-color: var(--color-ember) !important;
   }
 
   .set-card-logo-wrap {
@@ -43,82 +40,70 @@
     justify-content: center;
     padding: 0.75rem 1rem 0.5rem;
     min-height: 72px;
+    background-color: var(--color-surface-2);
   }
   .set-card-logo {
     max-height: 52px;
     max-width: 100%;
     object-fit: contain;
+    filter: drop-shadow(0 1px 4px rgba(0,0,0,0.4));
   }
 
-  /* Shared symbol icon used in both card-body and list name cell */
   .set-info-symbol {
     height: 20px;
     width: auto;
     object-fit: contain;
     flex-shrink: 0;
-    opacity: 0.85;
+    opacity: 0.75;
+    filter: invert(1) brightness(0.8);
   }
 
   /* ---- List view ---- */
   .sets-table td, .sets-table th { padding: 0.45rem 0.75rem; }
 
-  /* Series header row inside the table */
   .sets-series-row td {
+    font-family: var(--font-mono);
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #6c757d;
-    background-color: var(--pidex-grey);
+    letter-spacing: 0.1em;
+    color: var(--color-ember);
+    background-color: var(--color-surface-2);
     padding-top: 0.6rem;
     padding-bottom: 0.4rem;
-    border-top: 2px solid var(--pidex-border);
+    border-top: 1px solid var(--color-on-dark-border);
   }
 
-  /* Logo cell — fixed-size flex box keeps all logos the same visual size */
-  .set-list-logo-cell {
-    width: 88px;
-    min-width: 88px;
-  }
+  .set-list-logo-cell { width: 88px; min-width: 88px; }
   .set-list-logo-box {
-    width: 80px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 80px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
     margin: 0 auto;
   }
   .set-list-logo {
-    max-height: 30px;
-    max-width: 80px;
-    width: auto;
-    height: auto;
+    max-height: 30px; max-width: 80px;
+    width: auto; height: auto;
     object-fit: contain;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
   }
 
-  /* Symbol cell */
-  .set-list-symbol-cell {
-    width: 34px;
-    min-width: 34px;
-    text-align: center;
-  }
+  .set-list-symbol-cell { width: 34px; min-width: 34px; text-align: center; }
   .set-list-symbol {
-    height: 20px;
-    width: auto;
-    object-fit: contain;
-    opacity: 0.85;
+    height: 20px; width: auto;
+    object-fit: contain; opacity: 0.75;
+    filter: invert(1) brightness(0.8);
   }
 
   .cursor-pointer { cursor: pointer; }
 
-  /* Card-view series headers */
   .sets-card-series-header {
+    font-family: var(--font-mono);
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #6c757d;
-    border-bottom: 1px solid var(--pidex-border);
+    letter-spacing: 0.1em;
+    color: var(--color-ember);
+    border-bottom: 1px solid var(--color-border);
     padding-bottom: 0.35rem;
     margin-bottom: 0.75rem;
   }
@@ -215,14 +200,14 @@
   </span>
   {% if count == 'official' %}
   <span class="d-flex align-items-center gap-1">
-    <span class="legend-swatch" style="background:#ced4da"></span>In database
+    <span class="legend-swatch" style="background:#4A5568"></span>In database
   </span>
   <span class="d-flex align-items-center gap-1">
-    <span class="legend-swatch" style="background:#e9ecef;border:1px solid #ced4da;"></span>Not in database
+    <span class="legend-swatch" style="background:#2D3748;border:1px solid #4A5568;"></span>Not in database
   </span>
   {% elif count == 'db' %}
   <span class="d-flex align-items-center gap-1">
-    <span class="legend-swatch" style="background:#e9ecef;border:1px solid #ced4da;"></span>Not tracked
+    <span class="legend-swatch" style="background:#2D3748;border:1px solid #4A5568;"></span>Not tracked
   </span>
   {% endif %}
 </div>

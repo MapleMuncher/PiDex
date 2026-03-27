@@ -31,11 +31,13 @@
 
   {# Set info strip above the card image #}
   <div class="card-thumb-meta">
-    <img src="/images/sets/symbols/{{ card.set_code }}.png"
-         {% if card.set and card.set.symbol_url %}onerror="this.onerror=null;this.src='{{ card.set.symbol_url }}'"{% endif %}
-         alt="" class="card-thumb-symbol">
-    <span class="card-thumb-setcode">{{ card.set.code if card.set else card.set_code }}</span>
-    <span class="card-thumb-setnumber">· {{ card.set_number }}</span>
+    <div class="card-thumb-set-info">
+      <img src="/images/sets/symbols/{{ card.set_code }}.png"
+           {% if card.set and card.set.symbol_url %}onerror="this.onerror=null;this.src='{{ card.set.symbol_url }}'"{% endif %}
+           alt="" class="card-thumb-symbol">
+      <span class="card-thumb-setcode">{{ card.set.code if card.set else card.set_code }}</span>
+    </div>
+    <span class="card-thumb-setnumber">{{ card.set_number }}</span>
   </div>
 
   <div class="card-thumb-inner"
