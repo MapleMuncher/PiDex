@@ -21,7 +21,7 @@
   <!-- Google Fonts — Nunito + Space Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
   <style>
     /* ------------------------------------------------------------------ */
@@ -38,15 +38,14 @@
       --color-surface-3:      #5C8D99;
 
       /* Flame Accents */
-      --color-flame-deep:     #C0392B;
-      --color-flame:          #E74C3C;
+      --color-flame-deep:     #E74C3C;
+      --color-flame:          #D77153;
       --color-ember:          #F39C12;
       --color-spark:          #F1C40F;
 
       /* Text on Cream */
       --color-ink:            #1A1A2E;
       --color-ink-muted:      #5D6D7E;
-      --color-on-cream:       #1A1A2E;
       --color-border:         #D4C9A8;
       --color-border-dark:    #BDB09A;
 
@@ -64,6 +63,7 @@
       /* Typography */
       --font-display:         'Nunito', sans-serif;
       --font-mono:            'Space Mono', monospace;
+      --font-logo:            'Baloo 2';
 
       /* Radius */
       --radius-sm:            4px;
@@ -86,7 +86,32 @@
     }
 
     /* ------------------------------------------------------------------ */
-    /* Base                                                                 */
+    /* Logo                                                               */
+    /* ------------------------------------------------------------------ */
+      .logo-text {
+        font-family: var(--font-logo);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .logo-pi {
+        background: linear-gradient(135deg, var(--color-surface-2), var(--color-surface-3));
+        /* background: var(--color-surface-2); */
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .logo-dex {
+        background: linear-gradient(135deg, var(--color-flame), var(--color-ember));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+
+    /* ------------------------------------------------------------------ */
+    /* Base                                                               */
     /* ------------------------------------------------------------------ */
     body {
       font-family: var(--font-display);
@@ -126,6 +151,10 @@
     .navbar {
       background-color: var(--color-bg);
       padding: 0.5rem 0;
+    }
+
+    .navbar-brand {
+      font-size: 2rem;
     }
 
     .navbar-nav .nav-link {
@@ -185,7 +214,6 @@
       border-radius: var(--radius-lg);
       color: var(--color-on-dark);
       box-shadow: var(--shadow-md);
-      overflow: hidden;
     }
 
     .card-header {
@@ -194,6 +222,10 @@
       font-weight: 700;
       color: var(--color-ember);
       border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+    }
+
+    .card-header.collapsed {
+      border-radius: var(--radius-lg) !important;
     }
 
     .card-footer {
@@ -227,7 +259,7 @@
     .btn-primary:focus {
       background: linear-gradient(135deg, var(--color-flame-deep), var(--color-flame));
       color: #fff;
-      transform: translateY(-2px);
+      /* transform: translateY(-2px); */
       box-shadow: 0 4px 24px rgba(231,76,60,0.45);
       border-color: transparent;
     }
@@ -249,7 +281,7 @@
       background-color: var(--color-bg-warm);
       border-color: var(--color-border-dark);
       color: var(--color-ink);
-      transform: translateY(-2px);
+      /* transform: translateY(-2px); */
     }
 
     .btn-outline-secondary {
@@ -262,7 +294,7 @@
       background: rgba(160,174,192,0.10);
       color: var(--color-on-dark);
       border-color: var(--color-on-dark-muted);
-      transform: translateY(-2px);
+      /* transform: translateY(-2px); */
     }
 
     .btn-outline-primary {
@@ -275,7 +307,7 @@
       background: rgba(243,156,18,0.12);
       color: var(--color-ember);
       border-color: var(--color-ember);
-      transform: translateY(-2px);
+      /* transform: translateY(-2px); */
     }
 
     .btn-outline-danger {
@@ -288,7 +320,7 @@
       background: rgba(231,76,60,0.12);
       color: var(--color-flame);
       border-color: var(--color-flame);
-      transform: translateY(-2px);
+      /* transform: translateY(-2px); */
     }
 
     /* Btn-group: segmented selector style */
@@ -668,14 +700,14 @@
       justify-content: center;
       gap: 3px;
       font-family: var(--font-display);
-      font-size: 10px;
+      font-size: 0.9em;
       font-weight: 700;
       letter-spacing: 0.04em;
       padding: 4px 8px;
       border-radius: var(--radius-full);
-      border: 1.5px solid var(--color-surface-3);
+      border: 1.5px solid var(--color-ember);
       background: transparent;
-      color: var(--color-on-dark-muted);
+      color: var(--color-ember);
       cursor: pointer;
       transition: all var(--transition-fast);
       line-height: 1.2;
@@ -683,34 +715,16 @@
     }
 
     .card-thumb-badge:hover {
-      border-color: var(--color-on-dark-muted);
-      color: var(--color-on-dark);
-      background-color: transparent;
+      border-color: var(--color-ember);
+      color: var(--color-ember);
+      background: rgba(243,156,18,0.1);
     }
 
-    /* Active states per badge type */
-    .badge-wanted.is-active {
-      background: rgba(231,76,60,0.15) !important;
-      border-color: var(--color-flame) !important;
-      color: var(--color-flame) !important;
-    }
-
-    .badge-owned.is-active {
-      background: rgba(46,204,113,0.15) !important;
-      border-color: var(--color-success) !important;
-      color: var(--color-success) !important;
-    }
-
-    .badge-partner.is-active {
-      background: rgba(243,156,18,0.15) !important;
+    /* Active state — cream background, ember text/border */
+    .card-thumb-badge.is-active {
+      background: var(--color-on-dark) !important;
       border-color: var(--color-ember) !important;
       color: var(--color-ember) !important;
-    }
-
-    .badge-binder.is-active {
-      background: rgba(52,152,219,0.15) !important;
-      border-color: var(--color-info) !important;
-      color: #5dade2 !important;
     }
 
     /* Badge text: collapsed on desktop, expands on hover */
@@ -748,72 +762,25 @@
       font-weight: 700;
       padding: 5px 12px;
       border-radius: var(--radius-full);
-      border: 1.5px solid var(--color-on-dark-border);
+      border: 1.5px solid var(--color-ember);
       background: transparent;
-      color: var(--color-on-dark-muted);
+      color: var(--color-ember);
       cursor: pointer;
       transition: all var(--transition-fast);
     }
 
     .btn-status:hover {
-      border-color: var(--color-on-dark-muted);
-      color: var(--color-on-dark);
-      background-color: transparent;
+      border-color: var(--color-ember) !important;
+      color: var(--color-ember) !important;
+      background: rgba(243,156,18,0.1) !important;
     }
 
+    /* Active state — cream background, ember text/border */
     .collection-btn.is-active,
     .btn-check:checked + label.btn-status {
-      background: rgba(46,204,113,0.15);
-      border-color: var(--color-success);
-      color: var(--color-success);
-    }
-
-    .collection-btn[data-field="owned"].is-active {
-      background: rgba(46,204,113,0.15);
-      border-color: var(--color-success);
-      color: var(--color-success);
-    }
-
-    .collection-btn[data-field="wanted"].is-active {
-      background: rgba(231,76,60,0.15);
-      border-color: var(--color-flame);
-      color: var(--color-flame);
-    }
-
-    .collection-btn[data-field="partner"].is-active {
-      background: rgba(243,156,18,0.15);
+      background: var(--color-on-dark);
       border-color: var(--color-ember);
       color: var(--color-ember);
-    }
-
-    #filter-owned:checked + label.btn-status {
-      background: rgba(46,204,113,0.15);
-      border-color: var(--color-success);
-      color: var(--color-success);
-    }
-
-    #filter-wanted:checked + label.btn-status {
-      background: rgba(231,76,60,0.15);
-      border-color: var(--color-flame);
-      color: var(--color-flame);
-    }
-
-    #filter-partner:checked + label.btn-status {
-      background: rgba(243,156,18,0.15);
-      border-color: var(--color-ember);
-      color: var(--color-ember);
-    }
-
-    #filter-untracked:checked + label.btn-status {
-      background: rgba(160,174,192,0.12);
-      border-color: var(--color-on-dark-muted);
-      color: var(--color-on-dark-muted);
-    }
-
-    #filter-binder:checked + label.btn-status {
-      background: rgba(52,152,219,0.15);
-      border-color: var(--color-info);
-      color: #5dade2;
     }
 
     /* ------------------------------------------------------------------ */
@@ -973,10 +940,11 @@
     <div class="container">
 
       <a class="navbar-brand" href="{{ url_for('home.index') }}">
-        <img
+        <!-- <img
           src="{{ url_for('static', filename='img/logo_cyndaquil.svg') }}"
           alt="PiDex"
-          height="36">
+          height="36"> -->
+        <span class="logo-text logo-pi">Pi</span><span class="logo-text logo-dex">Dex</span>
       </a>
 
       <button class="navbar-toggler" type="button"
@@ -1071,6 +1039,7 @@
       if (localStorage.getItem(KEY) === '1') {
         body.classList.remove('show');
         toggle.setAttribute('aria-expanded', 'false');
+        toggle.classList.add('collapsed');
       }
 
       body.addEventListener('hidden.bs.collapse', () => localStorage.setItem(KEY, '1'));

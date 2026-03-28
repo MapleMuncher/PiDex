@@ -260,11 +260,8 @@
                      {% if current_partner is defined and current_partner %}checked{% endif %}
                      onchange="this.form.submit()">
               <label class="btn btn-sm btn-status" for="filter-partner">
-                <div class="badge-icons me-1">
-                  <i class="bi bi-person-fill icon-active"></i>
-                  <i class="bi bi-person icon-inactive"></i>
-                </div>
-                Partner
+                <span class="me-1" style="font-family: var(--font-logo); font-weight: 800; font-size: 1.1em; line-height: 1;">B</span>
+                Brigitte
               </label>
               <input class="btn-check" type="checkbox" name="untracked" id="filter-untracked" autocomplete="off"
                      {% if current_untracked %}checked{% endif %}
