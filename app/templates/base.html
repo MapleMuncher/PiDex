@@ -46,6 +46,7 @@
       /* Text on Cream */
       --color-ink:            #1A1A2E;
       --color-ink-muted:      #5D6D7E;
+      --color-on-cream:       #1A1A2E;
       --color-border:         #D4C9A8;
       --color-border-dark:    #BDB09A;
 
@@ -123,13 +124,12 @@
     /* Navbar                                                               */
     /* ------------------------------------------------------------------ */
     .navbar {
-      background-color: var(--color-surface);
-      border-bottom: 1px solid var(--color-on-dark-border);
+      background-color: var(--color-bg);
       padding: 0.5rem 0;
     }
 
     .navbar-nav .nav-link {
-      color: var(--color-on-dark) !important;
+      color: var(--color-on-cream) !important;
       font-weight: 700;
       font-size: 0.875rem;
       padding: 0.4rem 0.9rem;
@@ -140,7 +140,7 @@
 
     .navbar-nav .nav-link:hover {
       opacity: 1;
-      background-color: rgba(253,246,227,0.08);
+      background-color: rgba(0,0,0,0.08);
     }
 
     .navbar-nav .nav-link.active {
@@ -182,7 +182,6 @@
     /* ------------------------------------------------------------------ */
     .card {
       background-color: var(--color-surface);
-      border-color: var(--color-on-dark-border);
       border-radius: var(--radius-lg);
       color: var(--color-on-dark);
       box-shadow: var(--shadow-md);
@@ -190,10 +189,10 @@
     }
 
     .card-header {
-      background-color: var(--color-surface-2);
+      background-color: var(--color-surface);
       border-bottom-color: var(--color-on-dark-border);
       font-weight: 700;
-      color: var(--color-on-dark);
+      color: var(--color-ember);
       border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
     }
 
@@ -358,8 +357,8 @@
     .form-label {
       font-weight: 700;
       font-size: 0.875rem;
-      color: var(--color-ember);
-      font-family: var(--font-mono);
+      color: var(--color-cream);
+      font-family: var(--font-display);
     }
 
     .form-text {
@@ -557,7 +556,6 @@
       display: flex;
       flex-direction: column;
       background: var(--color-surface);
-      border: 1px solid var(--color-on-dark-border);
       border-radius: var(--radius-lg);
       overflow: hidden;
       transition: transform var(--transition-base), box-shadow var(--transition-base);
@@ -949,8 +947,15 @@
     .navbar .text-muted,
     .site-footer .text-muted { color: var(--color-on-dark-muted) !important; }
     .bg-teal-light { background-color: rgba(243,156,18,0.12); }
-    .text-success { color: var(--color-success) !important; }
-    .text-warning { color: var(--color-warning) !important; }
+    /* Owned = ember, Wanted = spark — consistent across all progress bars & labels */
+    .progress-bar.bg-success,
+    .legend-swatch.bg-success { background-color: var(--color-ember) !important; }
+
+    .progress-bar.bg-warning,
+    .legend-swatch.bg-warning  { background-color: var(--color-spark) !important; }
+
+    .text-success { color: var(--color-ember) !important; }
+    .text-warning { color: var(--color-spark) !important; }
     blockquote.border-start { border-color: var(--color-ember) !important; }
 
   </style>
