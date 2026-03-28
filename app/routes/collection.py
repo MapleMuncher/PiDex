@@ -95,13 +95,14 @@ def _eligible_query(collection):
 
 
 def _collection_stats(collection):
-    """Return (owned_count, total_count) for a collection.
+    """Return (owned_count, wanted_only_count, total_count) for a collection.
 
     total = number of eligible cards that have either owned=True or
             wanted=True (i.e. cards the user actively cares about).
     owned = subset of those that are owned.
+    wanted_only = subset that are wanted but not owned.
 
-    Example: 5 Charizard cards — 2 owned, 1 wanted → (2, 3).
+    Example: 5 Charizard cards — 2 owned, 1 wanted → (2, 1, 3).
     """
     base_q, _, _ = _eligible_query(collection)
     eligible_sq = base_q.with_only_columns(Card.id).distinct().subquery()
@@ -109,13 +110,14 @@ def _collection_stats(collection):
     row = db.session.execute(
         db.select(
             func.sum(case((CardStatus.owned == True, 1), else_=0)).label("owned"),
+            func.sum(case((db.and_(CardStatus.wanted == True, CardStatus.owned == False), 1), else_=0)).label("wanted_only"),
             func.count().label("total"),
         )
         .where(CardStatus.card_id.in_(db.select(eligible_sq.c.id)))
         .where(db.or_(CardStatus.owned == True, CardStatus.wanted == True))
     ).one()
 
-    return (row.owned or 0), (row.total or 0)
+    return (row.owned or 0), (row.wanted_only or 0), (row.total or 0)
 
 
 def _compute_groups(cards, group_by, status_map):
@@ -442,7 +444,7 @@ def detail(collection_id):
         .order_by(Card.norm_rarity_code)
     ).scalars().all()
 
-    owned_count, total_count = _collection_stats(collection)
+    owned_count, wanted_only_count, total_count = _collection_stats(collection)
 
     return render_template(
         "collection/detail.html",

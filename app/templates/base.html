@@ -60,6 +60,10 @@
       --color-error:          #E74C3C;
       --color-info:           #3498DB;
 
+      /* Progress bar colors — change here to update bars, labels and legends everywhere */
+      --progress-owned:       var(--color-ember);
+      --progress-wanted:      var(--color-flame-deep);
+
       /* Typography */
       --font-display:         'Nunito', sans-serif;
       --font-mono:            'Space Mono', monospace;
@@ -76,8 +80,8 @@
       --shadow-sm:            0 1px 4px rgba(26,26,46,0.10);
       --shadow-md:            0 4px 16px rgba(26,26,46,0.16);
       --shadow-lg:            0 8px 32px rgba(26,26,46,0.22);
-      --shadow-glow-ember:    0 0 20px rgba(243,156,18,0.28);
-      --shadow-glow-flame:    0 0 20px rgba(231,76,60,0.28);
+      --shadow-glow-ember:    0 0 20px rgba(243,156,18,0.48);
+      --shadow-glow-flame:    0 0 20px rgba(231,76,60,0.48);
 
       /* Transitions */
       --transition-fast:      150ms ease;
@@ -95,7 +99,7 @@
       }
 
       .logo-pi {
-        background: linear-gradient(135deg, var(--color-surface-2), var(--color-surface-3));
+        background: linear-gradient(135deg, var(--color-surface-3), var(--color-surface-2));
         /* background: var(--color-surface-2); */
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -103,7 +107,7 @@
       }
 
       .logo-dex {
-        background: linear-gradient(135deg, var(--color-flame), var(--color-ember));
+        background: linear-gradient(135deg, var(--color-ember), var(--color-flame));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -240,6 +244,14 @@
     /* ------------------------------------------------------------------ */
     /* Buttons                                                              */
     /* ------------------------------------------------------------------ */
+    .btn-group {
+      gap: 0.3rem;
+    }
+
+    .btn-group ~ .btn-group {
+      margin-left: 1rem;
+    }
+
     .btn {
       font-family: var(--font-display);
       font-weight: 700;
@@ -249,18 +261,16 @@
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--color-flame), var(--color-ember));
+      background: linear-gradient(135deg, var(--color-ember), var(--color-flame));
       border: none;
       color: #fff;
-      box-shadow: var(--shadow-glow-flame);
     }
 
     .btn-primary:hover,
     .btn-primary:focus {
-      background: linear-gradient(135deg, var(--color-flame-deep), var(--color-flame));
+      background: linear-gradient(135deg, var(--color-flame), var(--color-flame-deep));
       color: #fff;
       /* transform: translateY(-2px); */
-      box-shadow: 0 4px 24px rgba(231,76,60,0.45);
       border-color: transparent;
     }
 
@@ -383,7 +393,7 @@
       background-color: var(--color-surface-2);
       border-color: var(--color-ember);
       color: var(--color-on-dark);
-      box-shadow: 0 0 0 3px rgba(243,156,18,0.20);
+      box-shadow: 0 0 0 0 rgba(243,156,18,0.20);
     }
 
     .form-label {
@@ -409,7 +419,7 @@
 
     .form-check-input:focus {
       border-color: var(--color-ember);
-      box-shadow: 0 0 0 3px rgba(243,156,18,0.20);
+      box-shadow: 0 0 0 0px rgba(243,156,18,0.20);
     }
 
     .input-group-text {
@@ -488,12 +498,18 @@
     .table {
       color: var(--color-on-dark);
       border-color: var(--color-on-dark-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
     }
 
     .table > :not(caption) > * > * {
       background-color: transparent;
       border-bottom-color: var(--color-on-dark-border);
       color: var(--color-on-dark);
+    }
+
+    .table > tbody > tr:last-child > * {
+      border-width: 0px;
     }
 
     .table-light,
@@ -782,6 +798,14 @@
       border-color: var(--color-ember);
       color: var(--color-ember);
     }
+
+    /* ------------------------------------------------------------------ */
+    /* Progress bar utility classes                                        */
+    /* ------------------------------------------------------------------ */
+    .bar-owned  { background-color: var(--progress-owned)  !important; }
+    .bar-wanted { background-color: var(--progress-wanted) !important; }
+    .text-owned { color: var(--progress-owned)  !important; }
+    .text-wanted { color: var(--progress-wanted) !important; }
 
     /* ------------------------------------------------------------------ */
     /* Collapsible filter pane                                             */

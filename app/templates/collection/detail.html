@@ -24,23 +24,21 @@
     {% if total_count > 0 %}
       {% set pct = ((owned_count / total_count) * 100) | round(0) | int %}
       <div class="d-flex align-items-center gap-3">
-        <p class="mb-0 text-muted">
+        <p class="mb-0" style="font-family: var(--font-mono); color: var(--color-ink-muted);">
           {{ cards_pagination.total }} eligible card{{ 's' if cards_pagination.total != 1 }}
-          &nbsp;·&nbsp;
-          <span class="text-teal fw-semibold">{{ owned_count }}/{{ total_count }}</span>
-          tracked
+          · {{ owned_count }}/{{ total_count }} tracked
+          · {{ pct }}%
         </p>
         <div class="progress flex-grow-1" style="height:6px; max-width:180px;">
-          <div class="progress-bar" role="progressbar"
-               style="width:{{ pct }}%; background-color: var(--color-ember);"
+          <div class="progress-bar bar-owned" role="progressbar"
+               style="width:{{ pct }}%;"
                aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
-        <span class="small text-muted">{{ pct }}%</span>
       </div>
     {% else %}
-      <p class="mb-0 text-muted">
+      <p class="mb-0" style="font-family: var(--font-mono); color: var(--color-ink-muted);">
         {{ cards_pagination.total }} eligible card{{ 's' if cards_pagination.total != 1 }}
-        &nbsp;·&nbsp; No cards tracked yet
+        · No cards tracked yet
       </p>
     {% endif %}
   </div>

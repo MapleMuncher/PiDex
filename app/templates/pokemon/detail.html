@@ -14,15 +14,11 @@
 
 <div class="page-header">
   <h1>#{{ pokemon.id }} {{ pokemon.name }}</h1>
-  <p>
-    {% if pokemon.type_1 %}
-      <span class="badge bg-secondary me-1">{{ pokemon.type_1 }}</span>
-    {% endif %}
-    {% if pokemon.type_2 %}
-      <span class="badge bg-secondary me-1">{{ pokemon.type_2 }}</span>
-    {% endif %}
-    {{ cards | length }} card{{ 's' if cards | length != 1 }}
-  </p>
+  {%- set ns = namespace(parts=[]) -%}
+  {%- if pokemon.type_1 -%}{%- set ns.parts = ns.parts + [pokemon.type_1] -%}{%- endif -%}
+  {%- if pokemon.type_2 -%}{%- set ns.parts = ns.parts + [pokemon.type_2] -%}{%- endif -%}
+  {%- set ns.parts = ns.parts + [cards | length ~ (' card' if cards | length == 1 else ' cards')] -%}
+  <p style="font-family: var(--font-mono); color: var(--color-ink-muted);">{{ ns.parts | join(' · ') }}</p>
 </div>
 
 {# ------------------------------------------------------------------ #}

@@ -7,7 +7,7 @@
 {% if collections %}
   <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
     {% for col in collections %}
-      {% set owned, total = stats[col.id] %}
+      {% set owned, wanted_only, total = stats[col.id] %}
       <div class="col">
         <a href="{{ url_for('collection.detail', collection_id=col.id) }}"
            class="text-decoration-none">
@@ -31,47 +31,41 @@
             <div class="card-body pb-2">
               <h6 class="card-title mb-1 fw-bold" style="color: var(--color-on-dark)">{{ col.name }}</h6>
 
-              {# Criteria pills #}
-              <div class="d-flex flex-wrap gap-1 mb-2">
-                {% if col.collection_pokemon %}
-                  <span class="badge bg-light text-dark border small">
-                    {{ col.collection_pokemon | length }} Pokémon
-                  </span>
-                {% endif %}
-                {% if col.collection_rarities %}
-                  <span class="badge bg-light text-dark border small">
-                    {{ col.collection_rarities | length }} rarit{{ 'ies' if col.collection_rarities | length != 1 else 'y' }}
-                  </span>
-                {% endif %}
-                {% if col.date_from or col.date_to %}
-                  <span class="badge bg-light text-dark border small">
-                    {% if col.date_from and col.date_to %}
-                      {{ col.date_from.strftime('%Y') }}–{{ col.date_to.strftime('%Y') }}
-                    {% elif col.date_from %}
-                      From {{ col.date_from.strftime('%Y') }}
-                    {% else %}
-                      Until {{ col.date_to.strftime('%Y') }}
-                    {% endif %}
-                  </span>
-                {% endif %}
-              </div>
+              {# Criteria — mono text separated by dots #}
+              {%- set ns = namespace(parts=[]) -%}
+              {%- if col.collection_pokemon -%}
+                {%- set ns.parts = ns.parts + [col.collection_pokemon | length ~ ' Pokémon'] -%}
+              {%- endif -%}
+              {%- if col.collection_rarities -%}
+                {%- set ns.parts = ns.parts + [col.collection_rarities | length ~ (' rarities' if col.collection_rarities | length != 1 else ' rarity')] -%}
+              {%- endif -%}
+              {%- if col.date_from and col.date_to -%}
+                {%- set ns.parts = ns.parts + [col.date_from.strftime('%Y') ~ '–' ~ col.date_to.strftime('%Y')] -%}
+              {%- elif col.date_from -%}
+                {%- set ns.parts = ns.parts + ['From ' ~ col.date_from.strftime('%Y')] -%}
+              {%- elif col.date_to -%}
+                {%- set ns.parts = ns.parts + ['Until ' ~ col.date_to.strftime('%Y')] -%}
+              {%- endif -%}
+              {% if ns.parts %}
+              <p class="small mb-2" style="font-family: var(--font-mono); color: var(--color-on-dark-muted);">{{ ns.parts | join(' · ') }}</p>
+              {% endif %}
             </div>
 
             {# Progress bar #}
-            <div class="card-footer bg-transparent pt-2 pb-3 px-3">
+            <div class="px-3 pb-3">
               {% if total > 0 %}
-                {% set pct = ((owned / total) * 100) | round(0) | int %}
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="small text-muted">Progress</span>
-                  <span class="small fw-semibold text-teal">{{ owned }}/{{ total }}</span>
+                {%- set owned_pct  = (owned      / total * 100) | round(1) -%}
+                {%- set wanted_pct = (wanted_only / total * 100) | round(1) -%}
+                <div class="progress" style="height: 10px;"
+                     title="{{ owned }} owned · {{ wanted_only }} wanted">
+                  {% if owned_pct  > 0 %}<div class="progress-bar bar-owned"  style="width:{{ owned_pct }}%"></div>{% endif %}
+                  {% if wanted_pct > 0 %}<div class="progress-bar bar-wanted" style="width:{{ wanted_pct }}%"></div>{% endif %}
                 </div>
-                <div class="progress" style="height: 6px;">
-                  <div class="progress-bar bg-teal"
-                       role="progressbar"
-                       style="width: {{ pct }}%"
-                       aria-valuenow="{{ pct }}"
-                       aria-valuemin="0"
-                       aria-valuemax="100"></div>
+                <div class="d-flex justify-content-between small mt-1">
+                  <span class="text-owned fw-semibold">{{ owned }} owned</span>
+                  {% if wanted_only > 0 %}
+                    <span class="text-wanted fw-semibold">{{ wanted_only }} wanted</span>
+                  {% endif %}
                 </div>
               {% else %}
                 <span class="small text-muted">No cards tracked yet</span>

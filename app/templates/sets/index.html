@@ -41,6 +41,7 @@
     padding: 0.75rem 1rem 0.5rem;
     min-height: 72px;
     background-color: var(--color-surface-2);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
   .set-card-logo {
     max-height: 52px;
@@ -140,8 +141,8 @@
   {%- endif %}
   {% if t > 0 %}
   <div class="progress sets-progress" title="{{ tooltip }}">
-    {% if o_pct > 0 %}<div class="progress-bar bg-success" style="width:{{ o_pct }}%"></div>{% endif %}
-    {% if w_pct > 0 %}<div class="progress-bar bg-warning" style="width:{{ w_pct }}%"></div>{% endif %}
+    {% if o_pct > 0 %}<div class="progress-bar bar-owned" style="width:{{ o_pct }}%"></div>{% endif %}
+    {% if w_pct > 0 %}<div class="progress-bar bar-wanted" style="width:{{ w_pct }}%"></div>{% endif %}
     {% if u_pct > 0 %}<div class="progress-bar sets-progress-untracked" style="width:{{ u_pct }}%"></div>{% endif %}
     {% if n_pct > 0 %}<div class="progress-bar sets-progress-neither" style="width:{{ n_pct }}%"></div>{% endif %}
   </div>
@@ -192,10 +193,10 @@
 {# Legend #}
 <div class="d-flex align-items-center gap-3 mb-4 flex-wrap small text-muted">
   <span class="d-flex align-items-center gap-1">
-    <span class="legend-swatch bg-success"></span>Owned
+    <span class="legend-swatch bar-owned"></span>Owned
   </span>
   <span class="d-flex align-items-center gap-1">
-    <span class="legend-swatch bg-warning"></span>Wanted
+    <span class="legend-swatch bar-wanted"></span>Wanted
   </span>
   {% if count == 'official' %}
   <span class="d-flex align-items-center gap-1">
@@ -253,9 +254,9 @@
 
           {# Counts under the bar #}
           <div class="d-flex justify-content-between small mt-1">
-            <span class="text-success fw-semibold">{{ s.owned }} owned</span>
+            <span class="text-owned fw-semibold">{{ s.owned }} owned</span>
             {% if s.wanted_only > 0 %}
-              <span class="text-warning fw-semibold">{{ s.wanted_only }} wanted</span>
+              <span class="text-wanted fw-semibold">{{ s.wanted_only }} wanted</span>
             {% endif %}
             {% if count == 'tracked' %}
               <span style="color:#ced4da">{{ s.total }}</span>
@@ -338,10 +339,10 @@
             {% if s.release_date %}{{ s.release_date.strftime('%b %Y') }}{% endif %}
           </td>
           <td>{{ set_progress_bar(s, count) }}</td>
-          <td class="text-end text-success fw-semibold small">{{ s.owned }}</td>
+          <td class="text-end text-owned fw-semibold small">{{ s.owned }}</td>
           <td class="text-end small d-none d-sm-table-cell">
             {% if s.wanted_only > 0 %}
-              <span class="text-warning fw-semibold">{{ s.wanted_only }}</span>
+              <span class="text-wanted fw-semibold">{{ s.wanted_only }}</span>
             {% else %}
               <span class="text-muted">—</span>
             {% endif %}

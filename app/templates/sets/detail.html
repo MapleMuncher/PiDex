@@ -14,15 +14,11 @@
 
 <div class="page-header">
   <h1>{{ set.name }}</h1>
-  <p>
-    {% if set.series_name %}
-      <span class="badge bg-secondary me-1">{{ set.series_name }}</span>
-    {% endif %}
-    {% if set.release_date %}
-      <span class="text-muted me-2">{{ set.release_date.strftime('%B %Y') }}</span>
-    {% endif %}
-    {{ cards | length }} card{{ 's' if cards | length != 1 }}
-  </p>
+  {%- set ns = namespace(parts=[]) -%}
+  {%- if set.series_name -%}{%- set ns.parts = ns.parts + [set.series_name] -%}{%- endif -%}
+  {%- if set.release_date -%}{%- set ns.parts = ns.parts + [set.release_date.strftime('%B %Y')] -%}{%- endif -%}
+  {%- set ns.parts = ns.parts + [cards | length ~ (' card' if cards | length == 1 else ' cards')] -%}
+  <p style="font-family: var(--font-mono); color: var(--color-ink-muted);">{{ ns.parts | join(' · ') }}</p>
 </div>
 
 {# ------------------------------------------------------------------ #}
